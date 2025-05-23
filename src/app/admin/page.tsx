@@ -1,32 +1,63 @@
 "use client";
 
-import RoleGuard from "@/features/auth/model/RoleGuard";
+import { useEffect } from "react";
 import { useAuth } from "@/features/auth/model/useAuth";
-import AppLayout from "@/components/AppLayout";
+import DashboardLayout from "@/components/DashboardLayout";
 import Loading from "@/components/Loading";
+import { Card, Typography, Row, Col, Statistic } from "antd";
+import { useRouter } from "next/navigation";
 
-export default function AdminPage() {
+const { Title } = Typography;
+
+export default function AdminDashboardPage() {
     const { session, status } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (status === "unauthenticated") {
+            window.location.href = "/login";
+        }
+    }, [status]);
 
     if (status === "loading") {
         return <Loading />;
     }
 
+    // Mock data - sẽ thay thế bằng API call thực tế
+    const stats = {
+        totalEvents: 10,
+        activeEvents: 5,
+        totalUsers: 100,
+        totalRegistrations: 250
+    };
+
     return (
-        <RoleGuard allowedRoles={["ADMIN"]}>
-            <AppLayout>
-                <div className="container mx-auto p-4">
-                    <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
-                    <div className="bg-white shadow rounded-lg p-6">
-                        <h2 className="text-xl font-semibold mb-4">
-                            Welcome, {session?.user?.name}
-                        </h2>
-                        <p className="text-gray-600">
-                            This is a protected admin page. Only users with the ADMIN role can access this page.
-                        </p>
-                    </div>
-                </div>
-            </AppLayout>
-        </RoleGuard>
+        <DashboardLayout>
+            <div className="container mx-auto p-4">
+                <Title level={2}>Admin Dashboard</Title>
+                <Row gutter={[16, 16]} className="mt-4">
+                    <Col xs={24} sm={12} md={6}>
+                        <Card>
+                            <Statistic title="Total Events" value={stats.totalEvents} />
+                        </Card>
+                    </Col>
+                    <Col xs={24} sm={12} md={6}>
+                        <Card>
+                            <Statistic title="Active Events" value={stats.activeEvents} />
+                        </Card>
+                    </Col>
+                    <Col xs={24} sm={12} md={6}>
+                        <Card>
+                            <Statistic title="Total Users" value={stats.totalUsers} />
+                        </Card>
+                    </Col>
+                    <Col xs={24} sm={12} md={6}>
+                        <Card>
+                            <Statistic title="Total Registrations" value={stats.totalRegistrations} />
+                        </Card>
+                    </Col>
+                </Row>
+            </div>
+        </DashboardLayout>
     );
 }

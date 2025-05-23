@@ -1,26 +1,30 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Layout, Menu, Avatar, Dropdown, Badge, Typography, theme } from 'antd';
 import {
-    MenuFoldOutlined, MenuUnfoldOutlined,
     UserOutlined, LogoutOutlined,
-    BellOutlined, CalendarOutlined,
-    NotificationOutlined, SettingOutlined
+    BellOutlined, SettingOutlined,
+    MenuFoldOutlined, MenuUnfoldOutlined,
+    CalendarOutlined, TeamOutlined,
+    DashboardOutlined
 } from '@ant-design/icons';
 import { signOut, useSession } from 'next-auth/react';
+import { useRouter, usePathname } from 'next/navigation';
+import { useAuth } from '@/features/auth/model/useAuth';
 
 const { Header, Sider, Content, Footer } = Layout;
 const { Text } = Typography;
 
-interface AppLayoutProps {
+interface DashboardLayoutProps {
     children: React.ReactNode;
 }
 
-export default function AppLayout({ children }: AppLayoutProps) {
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const { data: session } = useSession();
+    const { session: authSession } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
     const [collapsed, setCollapsed] = useState(false);
     const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
 
@@ -76,9 +80,60 @@ export default function AppLayout({ children }: AppLayoutProps) {
         },
     ];
 
+    // Menu items based on user role
+    const getMenuItems = () => {
+        const items = [];
+
+        // Add menu items based on role
+        if (authSession?.user?.roles?.includes('ADMIN')) {
+            items.push(
+                {
+                    key: '/admin',
+                    icon: <TeamOutlined />,
+                    label: 'Admin Dashboard',
+                    onClick: () => router.push('/admin'),
+                }
+            );
+        } else {
+            // Home chỉ hiển thị cho LECTURER và STUDENT
+            items.push(
+                {
+                    key: '/',
+                    icon: <DashboardOutlined />,
+                    label: 'Home',
+                    onClick: () => router.push('/'),
+                }
+            );
+        }
+
+        if (authSession?.user?.roles?.includes('LECTURER')) {
+            items.push(
+                {
+                    key: '/organizer',
+                    icon: <TeamOutlined />,
+                    label: 'Organizer Dashboard',
+                    onClick: () => router.push('/organizer'),
+                }
+            );
+        }
+
+        // My Events chỉ hiển thị cho STUDENT và LECTURER
+        if (authSession?.user?.roles?.includes('STUDENT') || authSession?.user?.roles?.includes('LECTURER')) {
+            items.push(
+                {
+                    key: '/my-events',
+                    icon: <CalendarOutlined />,
+                    label: 'My Events',
+                    onClick: () => router.push('/my-events'),
+                }
+            );
+        }
+
+        return items;
+    };
+
     return (
         <Layout style={{ minHeight: '100vh' }}>
-            {/* Sidebar */}
             <Sider
                 trigger={null}
                 collapsible
@@ -90,59 +145,50 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     left: 0,
                     top: 0,
                     bottom: 0,
-                    zIndex: 1000,
                 }}
             >
-                <div style={{ height: 32, margin: 16, color: 'white', fontSize: 18, fontWeight: 'bold', textAlign: 'center' }}>
-                    {collapsed ? 'FE' : 'FPT Events'}
+                <div className="logo" style={{
+                    height: '64px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer'
+                }}
+                    onClick={() => router.push('/')}
+                >
+                    <h1 style={{
+                        color: '#fff',
+                        margin: 0,
+                        fontSize: '20px',
+                        fontWeight: 'bold',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                    }}>
+                        {collapsed ? 'FE' : 'FPT Events'}
+                    </h1>
                 </div>
                 <Menu
                     theme="dark"
                     mode="inline"
-                    defaultSelectedKeys={['1']}
-                    items={[
-                        {
-                            key: '1',
-                            icon: <CalendarOutlined />,
-                            label: 'Events',
-                            onClick: () => router.push('/events'),
-                        },
-                        {
-                            key: '2',
-                            icon: <NotificationOutlined />,
-                            label: 'Notifications',
-                            onClick: () => router.push('/notifications'),
-                        },
-                    ]}
+                    selectedKeys={[pathname]}
+                    items={getMenuItems()}
                 />
             </Sider>
-
             <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'all 0.2s' }}>
-                {/* Header */}
-                <Header
-                    style={{
-                        padding: 0,
-                        background: colorBgContainer,
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 999,
-                        width: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        boxShadow: '0 1px 4px rgba(0,21,41,.08)',
-                    }}
-                >
-                    {/* Left side of header */}
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                        {React.createElement(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined, {
-                            className: 'trigger',
-                            onClick: () => setCollapsed(!collapsed),
-                            style: { fontSize: 18, padding: '0 24px', cursor: 'pointer' },
-                        })}
-                    </div>
-
-                    {/* Right side of header */}
+                <Header style={{
+                    padding: '0 24px',
+                    background: colorBgContainer,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                }}>
+                    {React.createElement(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined, {
+                        className: 'trigger',
+                        onClick: () => setCollapsed(!collapsed),
+                        style: { fontSize: '18px', cursor: 'pointer' }
+                    })}
                     <div style={{ display: 'flex', alignItems: 'center', marginRight: 20 }}>
                         {/* Notifications */}
                         <Dropdown
@@ -176,29 +222,18 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     </div>
                 </Header>
 
-                {/* Main content */}
-                <Content
-                    style={{
-                        margin: '24px 16px',
-                        padding: 24,
-                        background: colorBgContainer,
-                        borderRadius: borderRadiusLG,
-                        minHeight: 280,
-                    }}
-                >
+                <Content style={{
+                    margin: '24px 16px',
+                    padding: 24,
+                    background: colorBgContainer,
+                    borderRadius: borderRadiusLG,
+                    minHeight: 280,
+                }}>
                     {children}
                 </Content>
 
-                {/* Footer */}
-                <Footer
-                    style={{
-                        textAlign: 'center',
-                        padding: '12px 50px',
-                        color: 'rgba(0, 0, 0, 0.45)',
-                        fontSize: 14,
-                    }}
-                >
-                    FPT Event FE Created by Thao
+                <Footer style={{ textAlign: 'center' }}>
+                    FPT Events ©{new Date().getFullYear()} Created by FPT University
                 </Footer>
             </Layout>
         </Layout>

@@ -24,10 +24,8 @@ export const useAuth = () => {
                 const roles = session?.user?.roles;
                 if (roles?.includes("ADMIN")) {
                     router.push("/admin");
-                } else if (roles?.includes("LECTURER")) {
-                    router.push("/lecturer");
-                } else if (roles?.includes("STUDENT")) {
-                    router.push("/student");
+                } else if (roles?.includes("LECTURER") || roles?.includes("STUDENT")) {
+                    router.push("/");
                 } else {
                     router.push("/unauthorized");
                 }
@@ -58,10 +56,8 @@ export const useAuth = () => {
         if (currentPath === "/" || currentPath === "/login") {
             if (roles.includes("ADMIN")) {
                 router.push("/admin");
-            } else if (roles.includes("LECTURER")) {
-                router.push("/lecturer");
-            } else if (roles.includes("STUDENT")) {
-                router.push("/student");
+            } else if (roles.includes("LECTURER") || roles.includes("STUDENT")) {
+                router.push("/");
             } else {
                 router.push("/unauthorized");
             }
@@ -71,9 +67,7 @@ export const useAuth = () => {
         // Kiểm tra quyền truy cập trang hiện tại
         if (currentPath.startsWith("/admin") && !roles.includes("ADMIN")) {
             router.push("/unauthorized");
-        } else if (currentPath.startsWith("/lecturer") && !roles.includes("LECTURER")) {
-            router.push("/unauthorized");
-        } else if (currentPath.startsWith("/student") && !roles.includes("STUDENT")) {
+        } else if (currentPath.startsWith("/organizer") && !roles.includes("LECTURER")) {
             router.push("/unauthorized");
         }
     };
@@ -100,8 +94,7 @@ export const useAuth = () => {
 
         const roles = session.user.roles;
         if (roles.includes("ADMIN")) return "/admin";
-        if (roles.includes("LECTURER")) return "/lecturer";
-        if (roles.includes("STUDENT")) return "/student";
+        if (roles.includes("LECTURER") || roles.includes("STUDENT")) return "/";
         return "/unauthorized";
     };
 
