@@ -1,0 +1,1 @@
+//Chi tiết event đã đăng ký
