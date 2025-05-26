@@ -27,8 +27,23 @@ export default function RootLayout({
             <ConfigProvider
               theme={{
                 token: {
-                  colorPrimary: "#1677ff",
+                  colorPrimary: "#ff8533", // Update primary color to match FPT brand
+                  borderRadius: 6,
+                  colorLink: "#ff8533",
+                  colorPrimaryHover: "#ffa366",
                 },
+                components: {
+                  Layout: {
+                    headerBg: '#ffffff',
+                    footerBg: '#27272a',
+                    footerPadding: '48px 24px 24px'
+                  },
+                  Menu: {
+                    horizontalItemSelectedColor: '#ff8533',
+                    horizontalItemHoverColor: '#ff8533',
+                    itemHoverColor: '#ff8533'
+                  }
+                }
               }}
             >
               {children}

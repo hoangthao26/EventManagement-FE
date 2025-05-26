@@ -11,20 +11,23 @@ const { Title, Paragraph } = Typography;
 
 //  Home page (danh sách events)
 export default function HomePage() {
-  const { session, status } = useAuth();
+  // DEVELOPMENT BYPASS - Remove auth checks
+  // const { session, status } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      window.location.href = "/login";
-    }
-  }, [status]);
+  // Remove auth effect
+  // useEffect(() => {
+  //     if (status === "unauthenticated") {
+  //         window.location.href = "/login";
+  //     }
+  // }, [status]);
 
-  if (status === "loading") {
-    return <Loading />;
-  }
+  // Remove loading check
+  // if (status === "loading") {
+  //     return <Loading />;
+  // }
 
-  // Mock data - sẽ thay thế bằng API call thực tế
+  // Mock data
   const events = [
     {
       id: 1,
@@ -35,7 +38,7 @@ export default function HomePage() {
       capacity: 50,
       registered: 30
     },
-    // Thêm các events khác...
+    // Add more mock events as needed
   ];
 
   return (
