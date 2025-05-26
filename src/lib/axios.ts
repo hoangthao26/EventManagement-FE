@@ -1,9 +1,11 @@
 import axios from 'axios';
+import { authApi } from "@/features/auth/api/authApi";
 
-const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://14.225.218.214:8080/api/v1';
 
 const axiosInstance = axios.create({
     baseURL,
+    timeout: 10000,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -39,17 +41,14 @@ axiosInstance.interceptors.response.use(
                     throw new Error('No refresh token available');
                 }
 
-                const response = await axios.post(`${baseURL}/auth/refresh`, {
-                    refreshToken,
-                });
-
-                const { accessToken, refreshToken: newRefreshToken } = response.data;
+                const response = await authApi.refreshToken(refreshToken);
+                const { accessToken, refreshToken: newRefreshToken, tokenType } = response.data;
 
                 localStorage.setItem('accessToken', accessToken);
                 localStorage.setItem('refreshToken', newRefreshToken);
 
                 // Update the original request with new token
-                originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+                originalRequest.headers.Authorization = `${tokenType} ${accessToken}`;
                 return axiosInstance(originalRequest);
             } catch (refreshError) {
                 // If refresh fails, clear tokens and redirect to login

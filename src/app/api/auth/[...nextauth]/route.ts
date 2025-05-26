@@ -29,13 +29,25 @@ const handler = NextAuth({
         async signIn({ account, profile }) {
             if (account?.provider === "google") {
                 try {
+                    // Log idToken từ Google
+                    console.log('Google idToken:', {
+                        idToken: account.id_token,
+
+                    });
+
                     // Send id_token to backend for verification
                     const response = await axios.post(
-                        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/google`,
+                        `${process.env.NEXT_PUBLIC_API_URL}/auth/google`,
                         {
                             idToken: account.id_token
                         }
                     );
+
+                    // Log ở server-side (terminal)
+                    console.log('Google Auth Server Response:', {
+                        status: response.status,
+                        data: response.data
+                    });
 
                     if (response.data) {
                         // Store tokens and user info
@@ -46,8 +58,12 @@ const handler = NextAuth({
                             email: response.data.email,
                             name: response.data.fullName,
                             image: (profile as any)?.picture,
-                            roles: response.data.roles as UserRole[]
+                            roles: response.data.roles as UserRole[],
+                            userDepartmentRoles: response.data.userDepartmentRoles
                         };
+
+                        // Pass response data to client
+                        account.response = response.data;
                         return true;
                     }
                 } catch (error: any) {
@@ -96,7 +112,7 @@ const handler = NextAuth({
         maxAge: 2 * 24 * 60 * 60, // 2 days
     },
     secret: process.env.NEXTAUTH_SECRET,
-    debug: process.env.NODE_ENV === "development",
+    debug: false,
 });
 
 export { handler as GET, handler as POST }; 
