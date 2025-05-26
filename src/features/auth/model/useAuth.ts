@@ -2,6 +2,7 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { UserRole } from "@/types/next-auth";
 import { useEffect } from "react";
+import { authApi } from "../api/authApi";
 
 export const useAuth = () => {
     const { data: session, status } = useSession();
@@ -12,6 +13,13 @@ export const useAuth = () => {
             const result = await signIn("google", {
                 redirect: false,
                 callbackUrl: "/"
+            });
+
+            // Log ở client-side (DevTools)
+            console.log('Google Auth Client Response:', {
+                status: result?.ok ? 'success' : 'error',
+                error: result?.error,
+                url: result?.url
             });
 
             if (result?.error) {
@@ -39,8 +47,30 @@ export const useAuth = () => {
     };
 
     const logout = async () => {
-        await signOut({ redirect: false });
-        router.push("/login");
+        try {
+            const refreshToken = localStorage.getItem('refreshToken');
+            if (!refreshToken) {
+                throw new Error('No refresh token available');
+            }
+
+            // Call backend API to logout
+            await authApi.logout(refreshToken);
+
+            // Clear local storage
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+
+            // Sign out from next-auth
+            await signOut({ redirect: false });
+
+            // Redirect to login page
+            router.push("/login");
+        } catch (error) {
+            console.error("Logout error:", error);
+            // Even if API call fails, still clear local session
+            await signOut({ redirect: false });
+            router.push("/login");
+        }
     };
 
     const redirectBasedOnRole = () => {
