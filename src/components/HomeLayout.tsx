@@ -101,7 +101,8 @@ export default function HomeLayout({ children }: HomeLayoutProps) {
         <Layout style={{ minHeight: '100vh' }}>
             {/* Header */}
             <Header style={{
-                padding: '0 24px',
+                padding: '0 50px', // Increase padding
+                width: '100%',
                 background: '#fff',
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -182,74 +183,71 @@ export default function HomeLayout({ children }: HomeLayoutProps) {
                 </div>
             </Header>
 
-            {/* Main Content */}
-            <Content style={{
-                margin: '24px auto',
-                padding: '0 24px',
-                maxWidth: 1200,
-                width: '100%'
-            }}>
+            {/* Main Content - Remove margin and padding here */}
+            <Content>
                 {children}
             </Content>
 
             {/* Footer */}
             <Footer style={{ 
                 background: '#27272a',
-                padding: '48px 24px 24px'
+                padding: '48px 50px 24px' // Match header padding
             }}>
-                <Row gutter={[32, 32]} justify="space-between" style={{ maxWidth: 1200, margin: '0 auto' }}>
-                    <Col xs={24} md={8}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 16 }}>
-                            <div style={{ background: '#ff8533', borderRadius: '8px', padding: '6px' }}>
-                                <CalendarOutlined style={{ color: 'white', fontSize: '20px' }} />
-                            </div>
-                            <Text strong style={{ color: '#fff', fontSize: '20px' }}>
-                                FPT<Text strong style={{ color: '#ff8533' }}>Events</Text>
-                            </Text>
-                        </div>
-                        <Text style={{ color: '#e5e5e5', display: 'block', marginBottom: 24 }}>
-                            Hệ thống quản lý sự kiện FPT University - nơi kết nối sinh viên, giảng viên 
-                            với các sự kiện hội thảo, workshop và talkshow hấp dẫn.
-                        </Text>
-                        <Space size="large">
-                            <FacebookOutlined style={{ color: '#fff', fontSize: 24 }} />
-                            <InstagramOutlined style={{ color: '#fff', fontSize: 24 }} />
-                            <YoutubeOutlined style={{ color: '#fff', fontSize: 24 }} />
-                        </Space>
-                    </Col>
-
-                    <Col xs={24} md={8}>
-                        <Text strong style={{ color: '#fff', fontSize: 18, display: 'block', marginBottom: 16 }}>
-                            Liên hệ
-                        </Text>
-                        <Space direction="vertical" size="middle">
-                            <Space>
-                                <EnvironmentOutlined style={{ color: '#ff8533' }} />
-                                <Text style={{ color: '#e5e5e5' }}>
-                                    Lô E2a-7, Đường D1, Khu Công nghệ cao, P. Long Thạnh Mỹ, TP. Thủ Đức
+                <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+                    <Row gutter={[32, 32]} justify="space-between" style={{ maxWidth: 1200, margin: '0 auto' }}>
+                        <Col xs={24} md={8}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 16 }}>
+                                <div style={{ background: '#ff8533', borderRadius: '8px', padding: '6px' }}>
+                                    <CalendarOutlined style={{ color: 'white', fontSize: '20px' }} />
+                                </div>
+                                <Text strong style={{ color: '#fff', fontSize: '20px' }}>
+                                    FPT<Text strong style={{ color: '#ff8533' }}>Events</Text>
                                 </Text>
+                            </div>
+                            <Text style={{ color: '#e5e5e5', display: 'block', marginBottom: 24 }}>
+                                Hệ thống quản lý sự kiện FPT University - nơi kết nối sinh viên, giảng viên 
+                                với các sự kiện hội thảo, workshop và talkshow hấp dẫn.
+                            </Text>
+                            <Space size="large">
+                                <FacebookOutlined style={{ color: '#fff', fontSize: 24 }} />
+                                <InstagramOutlined style={{ color: '#fff', fontSize: 24 }} />
+                                <YoutubeOutlined style={{ color: '#fff', fontSize: 24 }} />
                             </Space>
-                            <Space>
-                                <PhoneOutlined style={{ color: '#ff8533' }} />
-                                <Text style={{ color: '#e5e5e5' }}>(028) 7300 5588</Text>
-                            </Space>
-                            <Space>
-                                <MailOutlined style={{ color: '#ff8533' }} />
-                                <Text style={{ color: '#e5e5e5' }}>daihoc.hcm@fpt.edu.vn</Text>
-                            </Space>
-                        </Space>
-                    </Col>
-                </Row>
+                        </Col>
 
-                <div style={{ 
-                    marginTop: 48, 
-                    paddingTop: 24, 
-                    borderTop: '1px solid rgba(255,255,255,0.1)',
-                    textAlign: 'center'
-                }}>
-                    <Text style={{ color: '#a3a3a3' }}>
-                        © {new Date().getFullYear()} FPT Events. All rights reserved.
-                    </Text>
+                        <Col xs={24} md={8}>
+                            <Text strong style={{ color: '#fff', fontSize: 18, display: 'block', marginBottom: 16 }}>
+                                Liên hệ
+                            </Text>
+                            <Space direction="vertical" size="middle">
+                                <Space>
+                                    <EnvironmentOutlined style={{ color: '#ff8533' }} />
+                                    <Text style={{ color: '#e5e5e5' }}>
+                                        Lô E2a-7, Đường D1, Khu Công nghệ cao, P. Long Thạnh Mỹ, TP. Thủ Đức
+                                    </Text>
+                                </Space>
+                                <Space>
+                                    <PhoneOutlined style={{ color: '#ff8533' }} />
+                                    <Text style={{ color: '#e5e5e5' }}>(028) 7300 5588</Text>
+                                </Space>
+                                <Space>
+                                    <MailOutlined style={{ color: '#ff8533' }} />
+                                    <Text style={{ color: '#e5e5e5' }}>daihoc.hcm@fpt.edu.vn</Text>
+                                </Space>
+                            </Space>
+                        </Col>
+                    </Row>
+
+                    <div style={{ 
+                        marginTop: 48, 
+                        paddingTop: 24, 
+                        borderTop: '1px solid rgba(255,255,255,0.1)',
+                        textAlign: 'center'
+                    }}>
+                        <Text style={{ color: '#a3a3a3' }}>
+                            © {new Date().getFullYear()} FPT Events. All rights reserved.
+                        </Text>
+                    </div>
                 </div>
             </Footer>
         </Layout>
