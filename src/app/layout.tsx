@@ -3,8 +3,7 @@
 import '@ant-design/v5-patch-for-react-19';
 import { Inter } from "next/font/google";
 import { ConfigProvider } from "antd";
-import { SessionProvider } from "next-auth/react";
-import { AuthProvider } from "@/providers/AuthProvider";
+import { AuthProvider } from "@/shared/providers/AuthProvider";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -22,19 +21,17 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <SessionProvider>
-          <AuthProvider>
-            <ConfigProvider
-              theme={{
-                token: {
-                  colorPrimary: "#1677ff",
-                },
-              }}
-            >
-              {children}
-            </ConfigProvider>
-          </AuthProvider>
-        </SessionProvider>
+        <AuthProvider>
+          <ConfigProvider
+            theme={{
+              token: {
+                colorPrimary: "#1677ff",
+              },
+            }}
+          >
+            {children}
+          </ConfigProvider>
+        </AuthProvider>
       </body>
     </html>
   );
