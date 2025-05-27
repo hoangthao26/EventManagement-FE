@@ -1,10 +1,11 @@
-"use client";
 
+import "antd/dist/reset.css";
 import '@ant-design/v5-patch-for-react-19';
 import { Inter } from "next/font/google";
 import { ConfigProvider } from "antd";
 import { AuthProvider } from "@/shared/providers/AuthProvider";
 import "./globals.css";
+import AppLayout from "@/widgets/layouts/ui/AppLayout";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -25,11 +26,28 @@ export default function RootLayout({
           <ConfigProvider
             theme={{
               token: {
-                colorPrimary: "#1677ff",
+                colorPrimary: "#fa8c16",
+                colorLink: "#fa8c16",
+                colorLinkHover: "#fa8c16",
+                colorLinkActive: "#fa8c16",
+              },
+              components: {
+                Button: {
+                  colorPrimary: "#fa8c16",
+                  colorPrimaryHover: "#ffb366",
+                },
+                Radio: {
+                  colorPrimary: "#fa8c16",
+                },
+                Upload: {
+                  colorPrimary: "#fa8c16",
+                  colorPrimaryHover: "#ffb366",
+                },
               },
             }}
           >
-            {children}
+            <AppLayout>{children}</AppLayout>
+
           </ConfigProvider>
         </AuthProvider>
       </body>

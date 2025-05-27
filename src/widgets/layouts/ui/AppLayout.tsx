@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Layout, Menu, Avatar, Dropdown, Badge, Typography, theme } from 'antd';
 import {
     MenuFoldOutlined, MenuUnfoldOutlined,
@@ -21,6 +21,7 @@ interface AppLayoutProps {
 export default function AppLayout({ children }: AppLayoutProps) {
     const { data: session } = useSession();
     const router = useRouter();
+    const pathname = usePathname();
     const [collapsed, setCollapsed] = useState(false);
     const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
 
@@ -76,48 +77,53 @@ export default function AppLayout({ children }: AppLayoutProps) {
         },
     ];
 
+    // Ẩn Sider nếu là trang home
+    const showSider = pathname !== "/";
+
     return (
         <Layout style={{ minHeight: '100vh' }}>
             {/* Sidebar */}
-            <Sider
-                trigger={null}
-                collapsible
-                collapsed={collapsed}
-                style={{
-                    overflow: 'auto',
-                    height: '100vh',
-                    position: 'fixed',
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    zIndex: 1000,
-                }}
-            >
-                <div style={{ height: 32, margin: 16, color: 'white', fontSize: 18, fontWeight: 'bold', textAlign: 'center' }}>
-                    {collapsed ? 'FE' : 'FPT Events'}
-                </div>
-                <Menu
-                    theme="dark"
-                    mode="inline"
-                    defaultSelectedKeys={['1']}
-                    items={[
-                        {
-                            key: '1',
-                            icon: <CalendarOutlined />,
-                            label: 'Events',
-                            onClick: () => router.push('/events'),
-                        },
-                        {
-                            key: '2',
-                            icon: <NotificationOutlined />,
-                            label: 'Notifications',
-                            onClick: () => router.push('/notifications'),
-                        },
-                    ]}
-                />
-            </Sider>
+            {showSider && (
+                <Sider
+                    trigger={null}
+                    collapsible
+                    collapsed={collapsed}
+                    style={{
+                        overflow: 'auto',
+                        height: '100vh',
+                        position: 'fixed',
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        zIndex: 1000,
+                    }}
+                >
+                    <div style={{ height: 32, margin: 16, color: 'white', fontSize: 18, fontWeight: 'bold', textAlign: 'center' }}>
+                        {collapsed ? 'FE' : 'FPT Events'}
+                    </div>
+                    <Menu
+                        theme="dark"
+                        mode="inline"
+                        defaultSelectedKeys={['1']}
+                        items={[
+                            {
+                                key: '1',
+                                icon: <CalendarOutlined />,
+                                label: 'Events',
+                                onClick: () => router.push('/events'),
+                            },
+                            {
+                                key: '2',
+                                icon: <NotificationOutlined />,
+                                label: 'Notifications',
+                                onClick: () => router.push('/notifications'),
+                            },
+                        ]}
+                    />
+                </Sider>
+            )}
 
-            <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'all 0.2s' }}>
+            <Layout style={{ marginLeft: showSider ? (collapsed ? 80 : 200) : 0, transition: 'all 0.2s' }}>
                 {/* Header */}
                 <Header
                     style={{

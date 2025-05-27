@@ -10,7 +10,8 @@ export const routePermissions: RoutePermissions = {
     '/organizer': ['LECTURER'],
     '/my-events': ['STUDENT', 'LECTURER'],
     '/checkin': ['LECTURER'],
-    '/events': ['STUDENT', 'LECTURER', 'ADMIN']
+    '/events': ['STUDENT', 'LECTURER', 'ADMIN'],
+
 };
 
 // Kiểm tra quyền truy cập
