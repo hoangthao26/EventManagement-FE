@@ -43,10 +43,16 @@ const handler = NextAuth({
                         }
                     );
 
-                    // Log ở server-side (terminal)
-                    console.log('Google Auth Server Response:', {
-                        status: response.status,
-                        data: response.data
+                    // Log response từ backend
+                    console.log('Backend Auth Response:', {
+                        token: response.data.token,
+                        refreshToken: response.data.refreshToken,
+                        type: response.data.type,
+                        id: response.data.id,
+                        email: response.data.email,
+                        fullName: response.data.fullName,
+                        roles: response.data.roles,
+                        userDepartmentRoles: response.data.userDepartmentRoles
                     });
 
                     if (response.data) {
@@ -62,8 +68,6 @@ const handler = NextAuth({
                             userDepartmentRoles: response.data.userDepartmentRoles
                         };
 
-                        // Pass response data to client
-                        account.response = response.data;
                         return true;
                     }
                 } catch (error: any) {
@@ -87,6 +91,7 @@ const handler = NextAuth({
                     name?: string;
                     image?: string;
                     roles?: UserRole[];
+                    userDepartmentRoles?: any[];
                 };
             }
             return token;
@@ -101,7 +106,7 @@ const handler = NextAuth({
                 };
             }
             return session;
-        },
+        }
     },
     pages: {
         signIn: "/login",

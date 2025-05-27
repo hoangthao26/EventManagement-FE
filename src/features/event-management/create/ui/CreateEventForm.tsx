@@ -12,9 +12,10 @@ const { Title } = Typography;
 interface CreateEventFormProps {
     onSubmit: (data: CreateEventData) => void;
     loading?: boolean;
+    departments: { departmentName: string; departmentCode: string }[];
 }
 
-export function CreateEventForm({ onSubmit, loading }: CreateEventFormProps) {
+export function CreateEventForm({ onSubmit, loading, departments }: CreateEventFormProps) {
     const [form] = Form.useForm();
     const [isOnline, setIsOnline] = useState(false);
 
@@ -27,7 +28,7 @@ export function CreateEventForm({ onSubmit, loading }: CreateEventFormProps) {
     };
 
     return (
-        <Card title={<Title level={4}>Create New Event</Title>} style={{ width: '100%', margin: '0 auto' }}>
+        <Card style={{ width: '100%', margin: '0 auto' }}>
             <Form
                 form={form}
                 layout="vertical"
@@ -40,7 +41,7 @@ export function CreateEventForm({ onSubmit, loading }: CreateEventFormProps) {
                     isOnline: false,
                 }}
             >
-                <div style={{ fontWeight: 600, color: '#222', marginBottom: 8 }}>
+                <div style={{ fontWeight: 'bold', color: '#222', marginBottom: 8 }}>
                     Upload images
                 </div>
                 <Row gutter={16} style={{ marginBottom: 24 }}>
@@ -132,6 +133,8 @@ export function CreateEventForm({ onSubmit, loading }: CreateEventFormProps) {
                     <Select options={EVENT_TYPES} placeholder="Select event category" />
                 </Form.Item>
 
+
+
                 <div style={{ marginBottom: 24 }}>
                     <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 8 }}>Capacity</div>
                     <Row gutter={16}>
@@ -155,6 +158,8 @@ export function CreateEventForm({ onSubmit, loading }: CreateEventFormProps) {
                         </Col>
                     </Row>
                 </div>
+
+
 
                 <Form.Item
                     label={<b>Description</b>}
@@ -180,6 +185,21 @@ export function CreateEventForm({ onSubmit, loading }: CreateEventFormProps) {
                         }}
                     />
                 </Form.Item>
+
+                <Form.Item
+                    label={<b>Department</b>}
+                    name="departmentCode"
+                    rules={[{ required: true, message: 'Please select department' }]}
+                >
+                    <Select
+                        placeholder="Select department"
+                        options={departments.map(dep => ({
+                            label: dep.departmentName,
+                            value: dep.departmentCode
+                        }))}
+                    />
+                </Form.Item>
+
 
                 <Form.Item
                     label={<b>Department info</b>}

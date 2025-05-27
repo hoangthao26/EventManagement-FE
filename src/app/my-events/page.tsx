@@ -2,8 +2,8 @@
 
 import { useEffect } from "react";
 import { useAuth } from "@/features/auth/model/useAuth";
-import DashboardLayout from "@/components/DashboardLayout";
-import Loading from "@/components/Loading";
+import DashboardLayout from "@/widgets/layouts/ui/DashboardLayout";
+import Loading from "@/shared/ui/Loading";
 import { Card, Typography, Row, Col, Button } from "antd";
 import { useRouter } from "next/navigation";
 
