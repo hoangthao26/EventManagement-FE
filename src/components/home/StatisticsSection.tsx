@@ -51,7 +51,7 @@ const StatisticsSection: React.FC = () => {
       }}>
         <div style={{ textAlign: 'center', marginBottom: '48px' }}>
           <Title level={2} style={{ color: 'white' }}>
-            FPT Event trong con số
+            FPT Events trong con số
           </Title>
           <Paragraph style={{ color: '#a3a3a3', maxWidth: 600, margin: '0 auto' }}>
             Chúng tôi tự hào về những con số thể hiện sự phát triển và tầm ảnh hưởng 

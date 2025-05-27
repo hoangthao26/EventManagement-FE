@@ -12,7 +12,6 @@ import { useRouter } from "next/navigation";
 
 const { Title, Paragraph } = Typography;
 
-//  Home page (danh sách events)
 export default function HomePage() {
   // DEVELOPMENT BYPASS - Remove auth checks
   // const { session, status } = useAuth();

@@ -140,6 +140,7 @@ export default function HomeLayout({ children }: HomeLayoutProps) {
                         style={{ width: 400 }}
                         onSearch={onSearch}
                     />
+                    
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
