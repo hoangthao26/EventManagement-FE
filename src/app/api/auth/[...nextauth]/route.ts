@@ -3,9 +3,10 @@ import GoogleProvider from "next-auth/providers/google";
 import axios from "axios";
 import { UserRole } from "@/types/next-auth";
 
-// Tạo instance axios với timeout dài hơn
-const api = axios.create({
-    timeout: 10000, // 10 seconds
+// Tạo instance axios với timeout dài hơn cho NextAuth
+const authAxiosInstance = axios.create({
+    baseURL: process.env.NEXT_PUBLIC_API_URL,
+    timeout: 30000, // Tăng timeout cho NextAuth
     headers: {
         'Content-Type': 'application/json'
     }
@@ -32,12 +33,11 @@ const handler = NextAuth({
                     // Log idToken từ Google
                     console.log('Google idToken:', {
                         idToken: account.id_token,
-
                     });
 
                     // Send id_token to backend for verification
-                    const response = await axios.post(
-                        `${process.env.NEXT_PUBLIC_API_URL}/auth/google`,
+                    const response = await authAxiosInstance.post(
+                        '/auth/google',
                         {
                             idToken: account.id_token
                         }
