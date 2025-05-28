@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Form, Input, DatePicker, Select, InputNumber, Button, Card, Row, Col, Radio, Typography } from 'antd';
+import { Form, Input, DatePicker, Select, InputNumber, Button, Card, Row, Col, Radio, Typography, message } from 'antd';
 import { ImageUpload } from './ImageUpload';
 import { EVENT_TYPES } from '../lib/constants';
 import { Editor } from '@tinymce/tinymce-react';
@@ -15,16 +15,52 @@ interface CreateEventFormProps {
     departments: { departmentName: string; departmentCode: string }[];
 }
 
+async function uploadToCloudinary(file: File): Promise<string> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || '');
+    const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        {
+            method: 'POST',
+            body: formData,
+        }
+    );
+    const data = await response.json();
+    if (!data.secure_url) throw new Error('Upload failed');
+    return data.secure_url;
+}
+
 export function CreateEventForm({ onSubmit, loading, departments }: CreateEventFormProps) {
     const [form] = Form.useForm();
     const [isOnline, setIsOnline] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
 
-    const handleSubmit = (values: any) => {
-        onSubmit({
-            ...values,
-            startTime: values.timeRange[0].toDate(),
-            endTime: values.timeRange[1].toDate(),
-        });
+    const handleSubmit = async (values: any) => {
+        try {
+            setSubmitting(true);
+            // Upload poster
+            let posterUrl = values.poster;
+            if (posterUrl instanceof File) {
+                posterUrl = await uploadToCloudinary(posterUrl);
+            }
+            // Upload banner
+            let bannerUrl = values.banner;
+            if (bannerUrl instanceof File) {
+                bannerUrl = await uploadToCloudinary(bannerUrl);
+            }
+            onSubmit({
+                ...values,
+                poster: posterUrl,
+                banner: bannerUrl,
+                startTime: values.timeRange[0].toDate(),
+                endTime: values.timeRange[1].toDate(),
+            });
+        } catch (err) {
+            message.error('Failed to upload images or create event');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (
@@ -51,12 +87,7 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
                             rules={[{ required: true, message: 'Please upload event logo' }]}
                             style={{ marginBottom: 0 }}
                         >
-                            <ImageUpload type="POSTER" height={350}>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                    <p >Add event logo</p>
-                                    <p style={{ fontWeight: 'bold' }}>(720x958)</p>
-                                </div>
-                            </ImageUpload>
+                            <ImageUpload type="POSTER" height={350} />
                         </Form.Item>
                     </Col>
                     <Col xs={24} md={18}>
@@ -65,12 +96,7 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
                             rules={[{ required: true, message: 'Please upload event banner' }]}
                             style={{ marginBottom: 0 }}
                         >
-                            <ImageUpload type="BANNER" height={350}>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                    <p >Add event banner</p>
-                                    <p style={{ fontWeight: 'bold' }}>(1280x720)</p>
-                                </div>
-                            </ImageUpload>
+                            <ImageUpload type="BANNER" height={350} />
                         </Form.Item>
                     </Col>
                 </Row>
@@ -133,8 +159,6 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
                     <Select options={EVENT_TYPES} placeholder="Select event category" />
                 </Form.Item>
 
-
-
                 <div style={{ marginBottom: 24 }}>
                     <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 8 }}>Capacity</div>
                     <Row gutter={16}>
@@ -158,8 +182,6 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
                         </Col>
                     </Row>
                 </div>
-
-
 
                 <Form.Item
                     label={<b>Description</b>}
@@ -200,7 +222,6 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
                     />
                 </Form.Item>
 
-
                 <Form.Item
                     label={<b>Department info</b>}
                     name="departmentInfo"
@@ -210,7 +231,7 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
                 </Form.Item>
 
                 <Form.Item>
-                    <Button type="primary" htmlType="submit" loading={loading} block>
+                    <Button type="primary" htmlType="submit" loading={loading || submitting} block>
                         Create Event
                     </Button>
                 </Form.Item>
