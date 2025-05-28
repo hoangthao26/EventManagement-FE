@@ -92,6 +92,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     icon: <TeamOutlined />,
                     label: 'Admin Dashboard',
                     onClick: () => router.push('/admin'),
+                },
+                {
+                    key: '/admin/deparments',
+                    icon: <TeamOutlined />,
+                    label: 'Departments',
+                    onClick: () => router.push('/admin/departments'),
                 }
             );
         } else {
