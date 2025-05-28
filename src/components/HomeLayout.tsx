@@ -21,24 +21,9 @@ interface HomeLayoutProps {
 }
 
 export default function HomeLayout({ children }: HomeLayoutProps) {
-    // DEVELOPMENT BYPASS
-    const mockSession = {
-        user: {
-            id: "1",
-            name: "Test User",
-            email: "test@fpt.edu.vn",
-            image: "",
-            roles: ["ADMIN", "LECTURER", "STUDENT"]
-        }
-    };
-
-    // Original code
-    // const { data: session } = useSession();
-    // const { session: authSession } = useAuth();
+    const { data: session } = useSession();
+    const { session: authSession } = useAuth();
     const router = useRouter();
-
-    const session = mockSession;
-    const authSession = { user: mockSession.user };
 
     // Profile dropdown menu items
     const profileItems = [

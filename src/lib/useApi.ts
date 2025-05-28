@@ -8,7 +8,7 @@ export function useApi() {
     const [error, setError] = useState<string | null>(null);
 
     // Base URL for your API - update this when backend is ready
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://14.225.218.214:8080/api/v1";
 
     /**
      * Make an authenticated API call to the backend

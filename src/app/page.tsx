@@ -14,20 +14,20 @@ const { Title, Paragraph } = Typography;
 
 export default function HomePage() {
   // DEVELOPMENT BYPASS - Remove auth checks
-  // const { session, status } = useAuth();
+  const { session, status } = useAuth();
   const router = useRouter();
 
   // Remove auth effect
-  // useEffect(() => {
-  //     if (status === "unauthenticated") {
-  //         window.location.href = "/login";
-  //     }
-  // }, [status]);
+  useEffect(() => {
+      if (status === "unauthenticated") {
+          window.location.href = "/login";
+      }
+  }, [status]);
 
   // Remove loading check
-  // if (status === "loading") {
-  //     return <Loading />;
-  // }
+  if (status === "loading") {
+      return <Loading />;
+  }
 
   // Mock data
   const events = [
