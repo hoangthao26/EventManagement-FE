@@ -1,62 +1,47 @@
-import { withAuth } from "next-auth/middleware";
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
+import { checkPermission, getRedirectRoute } from '@/shared/lib/auth/permissions';
 
-export default withAuth(
-    function middleware(req) {
-        const token = req.nextauth.token;
-        const path = req.nextUrl.pathname;
+export async function middleware(request: NextRequest) {
+    const token = await getToken({ req: request });
+    const isAuthPage = request.nextUrl.pathname.startsWith('/login');
 
-        // Nếu chưa đăng nhập, chuyển về trang login
-        if (!token) {
-            return NextResponse.redirect(new URL("/login", req.url));
+    if (isAuthPage) {
+        if (token) {
+            const roles = token.user?.roles || [];
+            const redirectUrl = getRedirectRoute(roles);
+            return NextResponse.redirect(new URL(redirectUrl, request.url));
         }
-
-        const roles = token.user?.roles || [];
-
-        // Kiểm tra quyền truy cập cho các route admin
-        if (path.startsWith("/admin")) {
-            if (!roles.includes("ADMIN")) {
-                return NextResponse.redirect(new URL("/unauthorized", req.url));
-            }
-        }
-
-        // Kiểm tra quyền truy cập cho các route organizer
-        if (path.startsWith("/organizer")) {
-            if (!roles.includes("LECTURER")) {
-                return NextResponse.redirect(new URL("/unauthorized", req.url));
-            }
-        }
-
-        // Kiểm tra quyền truy cập cho các route my-events
-        if (path.startsWith("/my-events")) {
-            if (!roles.includes("STUDENT") && !roles.includes("LECTURER")) {
-                return NextResponse.redirect(new URL("/unauthorized", req.url));
-            }
-        }
-
-        // Kiểm tra quyền truy cập cho trang checkin
-        if (path.startsWith("/checkin")) {
-            if (!roles.includes("LECTURER")) {
-                return NextResponse.redirect(new URL("/unauthorized", req.url));
-            }
-        }
-
         return NextResponse.next();
-    },
-    {
-        callbacks: {
-            authorized: ({ token }) => !!token
-        },
     }
-);
 
-// Các route cần được bảo vệ
+    if (!token) {
+        return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    // Kiểm tra quyền truy cập
+    const roles = token.user?.roles || [];
+    const hasPermission = checkPermission(request.nextUrl.pathname, roles);
+
+    if (!hasPermission) {
+        return NextResponse.redirect(new URL('/unauthorized', request.url));
+    }
+
+    return NextResponse.next();
+}
+
+// Chỉ áp dụng middleware cho các routes cần bảo vệ
 export const config = {
     matcher: [
-        "/admin/:path*",
-        "/organizer/:path*",
-        "/my-events/:path*",
-        "/checkin/:path*",
-        "/events/:path*/bookings"
-    ]
+        /*
+         * Match all request paths except for the ones starting with:
+         * - api (API routes)
+         * - _next/static (static files)
+         * - _next/image (image optimization files)
+         * - favicon.ico (favicon file)
+         * - public folder
+         */
+        '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
+    ],
 }; 

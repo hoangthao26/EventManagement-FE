@@ -3,6 +3,12 @@ import { JWT } from "next-auth/jwt";
 
 export type UserRole = "ADMIN" | "LECTURER" | "STUDENT";
 
+interface UserDepartmentRole {
+    departmentCode: string;
+    departmentName: string;
+    roleName: string;
+}
+
 declare module "next-auth" {
     interface Session extends DefaultSession {
         accessToken?: string;
@@ -13,6 +19,7 @@ declare module "next-auth" {
             name?: string;
             image?: string;
             roles?: UserRole[];
+            userDepartmentRoles?: UserDepartmentRole[];
         } & DefaultSession["user"]
     }
 }
@@ -27,6 +34,7 @@ declare module "next-auth/jwt" {
             name?: string;
             image?: string;
             roles?: UserRole[];
+            userDepartmentRoles?: UserDepartmentRole[];
         }
     }
 } 
