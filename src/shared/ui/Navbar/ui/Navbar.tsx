@@ -25,7 +25,7 @@ export const Navbar: React.FC<NavbarProps> = ({ showSearch = false, onSearch }) 
     const { data: session } = useSession();
     const router = useRouter();
     const pathname = usePathname();
-    const { session: authSession } = useAuth();
+    const { session: authSession, logout } = useAuth();
     const userRoles = authSession?.user?.roles || [];
     const userDepartmentRoles = authSession?.user?.userDepartmentRoles || [];
     const isStudent = userRoles.includes('STUDENT');
@@ -52,7 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({ showSearch = false, onSearch }) 
             key: 'logout',
             icon: <LogoutOutlined />,
             label: 'Logout',
-            onClick: () => signOut({ callbackUrl: '/login' }),
+            onClick: () => logout(),
         },
     ];
 
