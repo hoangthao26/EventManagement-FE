@@ -2,11 +2,11 @@
 
 import { useEffect } from "react";
 import { useAuth } from "@/features/auth/model/useAuth";
-import HomeLayout from "@/components/HomeLayout";
-import Loading from "@/components/Loading";
 import CTASection from "@/components/home/CTASection";
 import EventCarousel from "@/components/home/EventCarousel";
 import StatisticsSection from "@/components/home/StatisticsSection";
+import HomeLayout from "@/widgets/layouts/ui/HomeLayout";
+import Loading from "@/shared/ui/Loading";
 import { Card, Typography, Row, Col, Button } from "antd";
 import { useRouter } from "next/navigation";
 

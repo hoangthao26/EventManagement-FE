@@ -1,16 +1,30 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, Avatar, Typography, Space, Tag } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import { useSession } from 'next-auth/react';
-import DashboardLayout from '@/components/DashboardLayout';
+import DashboardLayout from '@/widgets/layouts/ui/DashboardLayout';
+import { useRouter } from 'next/navigation';
+import Loading from '@/shared/ui/Loading';
+import { useAuth } from '@/features/auth/model/useAuth';
 
 const { Title, Text } = Typography;
 
 const ProfilePage: React.FC = () => {
-    const { data: session } = useSession();
 
+    const { session, status } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (status === "unauthenticated") {
+            window.location.href = "/login";
+        }
+    }, [status]);
+
+    if (status === "loading") {
+        return <Loading />;
+    }
     return (
         <DashboardLayout>
             <div style={{ maxWidth: 800, margin: '0 auto' }}>

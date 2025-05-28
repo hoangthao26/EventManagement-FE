@@ -4,13 +4,27 @@ import React from 'react';
 import { Result, Button, Space, Typography } from 'antd';
 import { useRouter } from 'next/navigation';
 import { HomeOutlined, ArrowLeftOutlined, SearchOutlined } from '@ant-design/icons';
-import HomeLayout from '@/components/HomeLayout';
+import { useAuth } from '@/features/auth/model/useAuth';
+import HomeLayout from '@/widgets/layouts/ui/HomeLayout';
+import Loading from '@/shared/ui/Loading';
+import { useEffect } from 'react';
 
 const { Title, Text } = Typography;
 
 export default function NotFound() {
     const router = useRouter();
+    const { session, status } = useAuth();
 
+
+    useEffect(() => {
+        if (status === "unauthenticated") {
+            window.location.href = "/login";
+        }
+    }, [status]);
+
+    if (status === "loading") {
+        return <Loading />;
+    }
     return (
         <HomeLayout>
             <div className="min-h-screen flex items-center justify-center">

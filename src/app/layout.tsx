@@ -1,10 +1,9 @@
-"use client";
 
+import "antd/dist/reset.css";
 import '@ant-design/v5-patch-for-react-19';
 import { Inter } from "next/font/google";
 import { ConfigProvider } from "antd";
-import { SessionProvider } from "next-auth/react";
-import { AuthProvider } from "@/providers/AuthProvider";
+import { AuthProvider } from "@/shared/providers/AuthProvider";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -22,34 +21,33 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <SessionProvider>
-          <AuthProvider>
-            <ConfigProvider
-              theme={{
-                token: {
-                  colorPrimary: "#ff8533", // Update primary color to match FPT brand
-                  borderRadius: 6,
-                  colorLink: "#ff8533",
-                  colorPrimaryHover: "#ffa366",
+        <AuthProvider>
+          <ConfigProvider
+            theme={{
+              token: {
+                colorPrimary: "#fa8c16",
+                colorLink: "#fa8c16",
+                colorLinkHover: "#fa8c16",
+                colorLinkActive: "#fa8c16",
+              },
+              components: {
+                Button: {
+                  colorPrimary: "#fa8c16",
+                  colorPrimaryHover: "#ffb366",
                 },
-                components: {
-                  Layout: {
-                    headerBg: '#ffffff',
-                    footerBg: '#27272a',
-                    footerPadding: '48px 24px 24px'
-                  },
-                  Menu: {
-                    horizontalItemSelectedColor: '#ff8533',
-                    horizontalItemHoverColor: '#ff8533',
-                    itemHoverColor: '#ff8533'
-                  }
-                }
-              }}
-            >
-              {children}
-            </ConfigProvider>
-          </AuthProvider>
-        </SessionProvider>
+                Radio: {
+                  colorPrimary: "#fa8c16",
+                },
+                Upload: {
+                  colorPrimary: "#fa8c16",
+                  colorPrimaryHover: "#ffb366",
+                },
+              },
+            }}
+          >
+            {children}
+          </ConfigProvider>
+        </AuthProvider>
       </body>
     </html>
   );
