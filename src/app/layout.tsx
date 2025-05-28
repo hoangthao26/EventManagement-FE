@@ -1,10 +1,9 @@
-"use client";
 
+import "antd/dist/reset.css";
 import '@ant-design/v5-patch-for-react-19';
 import { Inter } from "next/font/google";
 import { ConfigProvider } from "antd";
-import { SessionProvider } from "next-auth/react";
-import { AuthProvider } from "@/providers/AuthProvider";
+import { AuthProvider } from "@/shared/providers/AuthProvider";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -22,19 +21,33 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <SessionProvider>
-          <AuthProvider>
-            <ConfigProvider
-              theme={{
-                token: {
-                  colorPrimary: "#1677ff",
+        <AuthProvider>
+          <ConfigProvider
+            theme={{
+              token: {
+                colorPrimary: "#fa8c16",
+                colorLink: "#fa8c16",
+                colorLinkHover: "#fa8c16",
+                colorLinkActive: "#fa8c16",
+              },
+              components: {
+                Button: {
+                  colorPrimary: "#fa8c16",
+                  colorPrimaryHover: "#ffb366",
                 },
-              }}
-            >
-              {children}
-            </ConfigProvider>
-          </AuthProvider>
-        </SessionProvider>
+                Radio: {
+                  colorPrimary: "#fa8c16",
+                },
+                Upload: {
+                  colorPrimary: "#fa8c16",
+                  colorPrimaryHover: "#ffb366",
+                },
+              },
+            }}
+          >
+            {children}
+          </ConfigProvider>
+        </AuthProvider>
       </body>
     </html>
   );

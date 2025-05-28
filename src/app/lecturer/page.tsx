@@ -1,9 +1,9 @@
 "use client";
 
-import RoleGuard from "@/components/auth/RoleGuard";
+import RoleGuard from "@/features/auth/model/RoleGuard";
 import { useAuth } from "@/features/auth/model/useAuth";
-import AppLayout from "@/components/AppLayout";
-import Loading from "@/components/Loading";
+import DashboardLayout from "@/widgets/layouts/ui/DashboardLayout";
+import Loading from "@/shared/ui/Loading";
 
 export default function LecturerPage() {
     const { session, status } = useAuth();
@@ -14,7 +14,7 @@ export default function LecturerPage() {
 
     return (
         <RoleGuard allowedRoles={["LECTURER"]}>
-            <AppLayout>
+            <DashboardLayout>
                 <div className="container mx-auto p-4">
                     <h1 className="text-2xl font-bold mb-4">Lecturer Dashboard</h1>
                     <div className="bg-white shadow rounded-lg p-6">
@@ -26,7 +26,7 @@ export default function LecturerPage() {
                         </p>
                     </div>
                 </div>
-            </AppLayout>
+            </DashboardLayout>
         </RoleGuard>
     );
 } 

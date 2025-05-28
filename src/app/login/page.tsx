@@ -5,7 +5,7 @@ import { useAuth } from "@/features/auth/model/useAuth";
 import { useRouter } from "next/navigation";
 import { Layout } from "antd";
 import { LoginForm } from "@/features/auth/ui/LoginForm";
-import Loading from "@/components/Loading";
+import Loading from "@/shared/ui/Loading";
 
 const { Content } = Layout;
 
