@@ -1,9 +1,10 @@
-
-import "antd/dist/reset.css";
 import '@ant-design/v5-patch-for-react-19';
+import "antd/dist/reset.css";
+
 import { Inter } from "next/font/google";
 import { ConfigProvider } from "antd";
 import { AuthProvider } from "@/shared/providers/AuthProvider";
+import { AntdProvider } from "@/shared/providers/AntdProvider";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -45,7 +46,9 @@ export default function RootLayout({
               },
             }}
           >
-            {children}
+            <AntdProvider>
+              {children}
+            </AntdProvider>
           </ConfigProvider>
         </AuthProvider>
       </body>

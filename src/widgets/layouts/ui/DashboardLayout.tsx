@@ -24,7 +24,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Navbar showSearch={false} />
 
                 <Content style={{
-                    margin: '24px 16px',
+                    margin: '20px 72px',
                     padding: 24,
                     background: colorBgContainer,
                     borderRadius: borderRadiusLG,

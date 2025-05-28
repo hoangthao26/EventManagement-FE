@@ -5,14 +5,14 @@ export const EVENT_TYPES = [
 ] as const;
 
 export const IMAGE_DIMENSIONS = {
-    POSTER: {
-        width: 720,
-        height: 958,
-        aspectRatio: 720 / 958,
-    },
     BANNER: {
         width: 1280,
         height: 720,
-        aspectRatio: 1280 / 720,
+        label: '(1280x720)'
     },
+    POSTER: {
+        width: 720,
+        height: 958,
+        label: '(720x958)'
+    }
 } as const; 

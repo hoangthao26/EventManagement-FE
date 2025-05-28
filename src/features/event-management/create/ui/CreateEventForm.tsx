@@ -15,20 +15,43 @@ interface CreateEventFormProps {
     departments: { departmentName: string; departmentCode: string }[];
 }
 
-async function uploadToCloudinary(file: File): Promise<string> {
+type ImageType = 'banner' | 'poster';
+
+async function uploadToCloudinary(file: File, type: ImageType, eventName: string): Promise<string> {
+    if (!file) throw new Error('No file provided');
+    if (!eventName) throw new Error('Event name is required');
+
+    // Format tên sự kiện: loại_bỏ_dấu_cách_và_ký_tự_đặc_biệt
+    const formattedEventName = eventName
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '');
+
+    // Thêm timestamp
+    const timestamp = new Date().getTime();
+    const publicId = `${type}/${formattedEventName}_${timestamp}`;
+
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || '');
-    const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-        {
-            method: 'POST',
-            body: formData,
-        }
-    );
-    const data = await response.json();
-    if (!data.secure_url) throw new Error('Upload failed');
-    return data.secure_url;
+    formData.append('upload_preset', type === 'banner' ? 'upload_banner' : 'upload_poster');
+    formData.append('public_id', publicId);
+
+    try {
+        const response = await fetch(
+            `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+            {
+                method: 'POST',
+                body: formData,
+            }
+        );
+        const data = await response.json();
+        if (!data.secure_url) throw new Error('Upload failed');
+        return data.secure_url;
+    } catch (error) {
+        console.error(`Failed to upload ${type}:`, error);
+        throw new Error(`Failed to upload ${type}`);
+    }
 }
 
 export function CreateEventForm({ onSubmit, loading, departments }: CreateEventFormProps) {
@@ -39,16 +62,20 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
     const handleSubmit = async (values: any) => {
         try {
             setSubmitting(true);
+            const eventName = values.title;
+
             // Upload poster
             let posterUrl = values.poster;
             if (posterUrl instanceof File) {
-                posterUrl = await uploadToCloudinary(posterUrl);
+                posterUrl = await uploadToCloudinary(posterUrl, 'poster', eventName);
             }
+
             // Upload banner
             let bannerUrl = values.banner;
             if (bannerUrl instanceof File) {
-                bannerUrl = await uploadToCloudinary(bannerUrl);
+                bannerUrl = await uploadToCloudinary(bannerUrl, 'banner', eventName);
             }
+
             onSubmit({
                 ...values,
                 poster: posterUrl,
@@ -57,6 +84,7 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
                 endTime: values.timeRange[1].toDate(),
             });
         } catch (err) {
+            console.error('Error creating event:', err);
             message.error('Failed to upload images or create event');
         } finally {
             setSubmitting(false);
@@ -64,178 +92,179 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
     };
 
     return (
-        <Card style={{ width: '100%', margin: '0 auto' }}>
-            <Form
-                form={form}
-                layout="vertical"
-                onFinish={handleSubmit}
-                initialValues={{
-                    capacity: {
-                        student: 0,
-                        lecturer: 0,
-                    },
-                    isOnline: false,
-                }}
-            >
-                <div style={{ fontWeight: 'bold', color: '#222', marginBottom: 8 }}>
-                    Upload images
-                </div>
-                <Row gutter={16} style={{ marginBottom: 24 }}>
-                    <Col xs={24} md={6}>
-                        <Form.Item
-                            name="poster"
-                            rules={[{ required: true, message: 'Please upload event logo' }]}
-                            style={{ marginBottom: 0 }}
-                        >
-                            <ImageUpload type="POSTER" height={350} />
-                        </Form.Item>
-                    </Col>
-                    <Col xs={24} md={18}>
-                        <Form.Item
-                            name="banner"
-                            rules={[{ required: true, message: 'Please upload event banner' }]}
-                            style={{ marginBottom: 0 }}
-                        >
-                            <ImageUpload type="BANNER" height={350} />
-                        </Form.Item>
-                    </Col>
-                </Row>
 
-                <Form.Item
-                    label={<b>Event name</b>}
-                    name="title"
-                    rules={[{ required: true, message: 'Please enter event name' }]}
-                >
-                    <Input maxLength={100} placeholder="Event name" />
-                </Form.Item>
-
-                <Form.Item label={<b>Event type</b>} name="isOnline" style={{ marginBottom: 0 }}>
-                    <Radio.Group
-                        onChange={(e: any) => setIsOnline(e.target.value)}
-                        optionType="button"
-                        buttonStyle="solid"
-                    >
-                        <Radio value={false}>Offline event</Radio>
-                        <Radio value={true}>Online event</Radio>
-                    </Radio.Group>
-                </Form.Item>
-
-                {!isOnline && (
+        <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleSubmit}
+            initialValues={{
+                capacity: {
+                    student: 0,
+                    lecturer: 0,
+                },
+                isOnline: false,
+            }}
+        >
+            <div style={{ fontWeight: 'bold', color: '#222', marginBottom: 8 }}>
+                Upload images
+            </div>
+            <Row gutter={16} style={{ marginBottom: 24 }}>
+                <Col xs={24} md={6}>
                     <Form.Item
-                        label={<b>Address</b>}
-                        name="address"
-                        rules={[{ required: true, message: 'Please enter event address' }]}
+                        name="poster"
+                        rules={[{ required: true, message: 'Please upload event logo' }]}
+                        style={{ marginBottom: 0 }}
                     >
-                        <Input maxLength={80} placeholder="Event address" />
-                    </Form.Item>
-                )}
+                        <ImageUpload type="POSTER" height={350} />
 
+                    </Form.Item>
+                </Col>
+                <Col xs={24} md={18}>
+                    <Form.Item
+                        name="banner"
+                        rules={[{ required: true, message: 'Please upload event banner' }]}
+                        style={{ marginBottom: 0 }}
+                    >
+                        <ImageUpload type="BANNER" height={350} />
+                    </Form.Item>
+                </Col>
+            </Row>
+
+            <Form.Item
+                label={<b>Event name</b>}
+                name="title"
+                rules={[{ required: true, message: 'Please enter event name' }]}
+            >
+                <Input maxLength={100} placeholder="Event name" />
+            </Form.Item>
+
+            <Form.Item label={<b>Event type</b>} name="isOnline" style={{ marginBottom: 8 }}>
+                <Radio.Group
+                    onChange={(e: any) => setIsOnline(e.target.value)}
+                    optionType="button"
+                    buttonStyle="solid"
+                >
+                    <Radio value={false}>Offline event</Radio>
+                    <Radio value={true}>Online event</Radio>
+                </Radio.Group>
+            </Form.Item>
+
+            {!isOnline && (
+                <Form.Item
+                    label={<b>Address</b>}
+                    name="address"
+                    rules={[{ required: true, message: 'Please enter event address' }]}
+                >
+                    <Input maxLength={80} placeholder="Event address" />
+                </Form.Item>
+            )}
+
+            <Row gutter={16}>
+                <Col xs={24} md={12}>
+                    <Form.Item
+                        label={<b>Event time</b>}
+                        name="timeRange"
+                        rules={[{ required: true, message: 'Please select event time' }]}
+                    >
+                        <DatePicker.RangePicker showTime style={{ width: '100%' }} placeholder={["Start date", "End date"]} />
+                    </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                    <Form.Item
+                        label={<b>Registration time</b>}
+                        name="registrationTimeRange"
+                        rules={[{ required: true, message: 'Please select registration time' }]}
+                    >
+                        <DatePicker.RangePicker showTime style={{ width: '100%' }} placeholder={["Start date", "End date"]} />
+                    </Form.Item>
+                </Col>
+            </Row>
+
+            <Form.Item
+                label={<b>Event category</b>}
+                name="type"
+                rules={[{ required: true, message: 'Please select event category' }]}
+            >
+                <Select options={EVENT_TYPES} placeholder="Select event category" />
+            </Form.Item>
+
+            <div style={{ marginBottom: 24 }}>
+                <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 8 }}>Capacity</div>
                 <Row gutter={16}>
                     <Col xs={24} md={12}>
                         <Form.Item
-                            label={<b>Event time</b>}
-                            name="timeRange"
-                            rules={[{ required: true, message: 'Please select event time' }]}
+                            label="Student capacity"
+                            name={['capacity', 'student']}
+                            rules={[{ required: true, message: 'Please enter student capacity' }]}
                         >
-                            <DatePicker.RangePicker showTime style={{ width: '100%' }} placeholder={["Start date", "End date"]} />
+                            <InputNumber min={0} style={{ width: '100%' }} placeholder="Student capacity" />
                         </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
                         <Form.Item
-                            label={<b>Registration time</b>}
-                            name="registrationTimeRange"
-                            rules={[{ required: true, message: 'Please select registration time' }]}
+                            label="Lecturer capacity"
+                            name={['capacity', 'lecturer']}
+                            rules={[{ required: true, message: 'Please enter lecturer capacity' }]}
                         >
-                            <DatePicker.RangePicker showTime style={{ width: '100%' }} placeholder={["Start date", "End date"]} />
+                            <InputNumber min={0} style={{ width: '100%' }} placeholder="Lecturer capacity" />
                         </Form.Item>
                     </Col>
                 </Row>
+            </div>
 
-                <Form.Item
-                    label={<b>Event category</b>}
-                    name="type"
-                    rules={[{ required: true, message: 'Please select event category' }]}
-                >
-                    <Select options={EVENT_TYPES} placeholder="Select event category" />
-                </Form.Item>
+            <Form.Item
+                label={<b>Description</b>}
+                name="description"
+                rules={[{ required: true, message: 'Please enter event description' }]}
+            >
+                <Editor
+                    apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY}
+                    init={{
+                        height: 300,
+                        menubar: false,
+                        branding: false,
+                        plugins: [
+                            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                            'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
+                        ],
+                        toolbar:
+                            'undo redo | blocks fontsize | bold italic underline forecolor backcolor | ' +
+                            'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | ' +
+                            'removeformat | image media code',
+                        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
+                    }}
+                />
+            </Form.Item>
 
-                <div style={{ marginBottom: 24 }}>
-                    <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 8 }}>Capacity</div>
-                    <Row gutter={16}>
-                        <Col xs={24} md={12}>
-                            <Form.Item
-                                label="Student capacity"
-                                name={['capacity', 'student']}
-                                rules={[{ required: true, message: 'Please enter student capacity' }]}
-                            >
-                                <InputNumber min={0} style={{ width: '100%' }} placeholder="Student capacity" />
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} md={12}>
-                            <Form.Item
-                                label="Lecturer capacity"
-                                name={['capacity', 'lecturer']}
-                                rules={[{ required: true, message: 'Please enter lecturer capacity' }]}
-                            >
-                                <InputNumber min={0} style={{ width: '100%' }} placeholder="Lecturer capacity" />
-                            </Form.Item>
-                        </Col>
-                    </Row>
-                </div>
+            <Form.Item
+                label={<b>Department</b>}
+                name="departmentCode"
+                rules={[{ required: true, message: 'Please select department' }]}
+            >
+                <Select
+                    placeholder="Select department"
+                    options={departments.map(dep => ({
+                        label: dep.departmentName,
+                        value: dep.departmentCode
+                    }))}
+                />
+            </Form.Item>
 
-                <Form.Item
-                    label={<b>Description</b>}
-                    name="description"
-                    rules={[{ required: true, message: 'Please enter event description' }]}
-                >
-                    <Editor
-                        apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY}
-                        init={{
-                            height: 300,
-                            menubar: false,
-                            branding: false,
-                            plugins: [
-                                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                                'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
-                            ],
-                            toolbar:
-                                'undo redo | blocks fontsize | bold italic underline forecolor backcolor | ' +
-                                'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | ' +
-                                'removeformat | image media code',
-                            content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
-                        }}
-                    />
-                </Form.Item>
+            <Form.Item
+                label={<b>Department info</b>}
+                name="departmentInfo"
+                rules={[{ required: true, message: 'Please enter department info' }]}
+            >
+                <Input.TextArea rows={4} placeholder="Department info" />
+            </Form.Item>
 
-                <Form.Item
-                    label={<b>Department</b>}
-                    name="departmentCode"
-                    rules={[{ required: true, message: 'Please select department' }]}
-                >
-                    <Select
-                        placeholder="Select department"
-                        options={departments.map(dep => ({
-                            label: dep.departmentName,
-                            value: dep.departmentCode
-                        }))}
-                    />
-                </Form.Item>
+            <Form.Item>
+                <Button type="primary" htmlType="submit" loading={loading || submitting} block>
+                    Create Event
+                </Button>
+            </Form.Item>
+        </Form>
 
-                <Form.Item
-                    label={<b>Department info</b>}
-                    name="departmentInfo"
-                    rules={[{ required: true, message: 'Please enter department info' }]}
-                >
-                    <Input.TextArea rows={4} placeholder="Department info" />
-                </Form.Item>
-
-                <Form.Item>
-                    <Button type="primary" htmlType="submit" loading={loading || submitting} block>
-                        Create Event
-                    </Button>
-                </Form.Item>
-            </Form>
-        </Card>
     );
 } 

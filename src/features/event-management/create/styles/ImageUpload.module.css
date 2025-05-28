@@ -1,0 +1,5 @@
+/* Override antd's default padding */
+:global(.ant-upload-btn) {
+    padding: 10px !important;
+
+}

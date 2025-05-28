@@ -1,1 +1,0 @@
-//Danh sách events đã tạo
