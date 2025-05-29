@@ -36,7 +36,7 @@ export default function EventsPage() {
 
     return (
         <DashboardLayout>
-            <div style={{ padding: '16px' }}>
+            <div style={{ padding: '0px 16px' }}>
                 <EventList userDepartmentRoles={userDepartmentRoles} />
             </div>
         </DashboardLayout>

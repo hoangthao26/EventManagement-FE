@@ -17,7 +17,7 @@
     margin-right: 24px;
     background: #f5f5f5;
     flex-shrink: 0;
-
+    border: 1.5px solid #bec0c4;
 
 }
 
@@ -27,6 +27,7 @@
     flex-direction: column;
     justify-content: center;
     padding: 16px 0;
+    padding-left: 16px;
 
 }
 
@@ -83,4 +84,12 @@
     color: #5c5c5c;
     font-size: 1rem;
     margin-bottom: 8px;
+}
+
+.custom-segmented .ant-segmented-item-selected {
+    background: #ff9800 !important;
+    /* Cam */
+    color: #fff !important;
+    font-weight: 600;
+    transition: background 0.2s;
 }

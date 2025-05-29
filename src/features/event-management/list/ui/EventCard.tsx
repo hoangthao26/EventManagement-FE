@@ -18,7 +18,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onOverview, onMembe
         <div className={styles.card}>
             <div className={styles.header}>
                 {/* Nếu có ảnh, thay src bằng event.banner hoặc event.poster */}
-                <img className={styles.image} src="https://i.imgur.com/dtQsPEy.png" alt={event.name} />
+                <img className={styles.image} src={event.bannerUrl} alt={event.name} />
                 <div className={styles.info}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
                         <div className={styles.title}>{event.name}</div>

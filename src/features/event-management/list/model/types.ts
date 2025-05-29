@@ -11,6 +11,8 @@ export interface Event {
     startTime: string;
     endTime: string;
     mode: EventMode;
+    bannerUrl: string;
+    posterUrl: string;
     createdAt: string;
     updatedAt: string;
     status: EventStatus;

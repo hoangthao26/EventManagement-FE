@@ -12,7 +12,6 @@ import { useAuth } from '@/features/auth/model/useAuth';
 const { Title, Text } = Typography;
 
 const ProfilePage: React.FC = () => {
-
     const { session, status } = useAuth();
     const router = useRouter();
 
@@ -25,6 +24,7 @@ const ProfilePage: React.FC = () => {
     if (status === "loading") {
         return <Loading />;
     }
+
     return (
         <DashboardLayout>
             <div style={{ maxWidth: 800, margin: '0 auto' }}>

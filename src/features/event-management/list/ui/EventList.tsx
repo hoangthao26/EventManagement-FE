@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, Typography, Row, Col, Button, Tag, Space, Table, Select, Dropdown } from 'antd';
+import { Card, Typography, Row, Col, Button, Tag, Space, Table, Select, Dropdown, Pagination, Segmented } from 'antd';
 
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth/model/useAuth';
@@ -13,7 +13,7 @@ import { useAntdMessage } from '@/shared/lib/hooks/useAntdMessage';
 import { MenuItemType } from 'antd/es/menu/interface';
 import { EventCard } from './EventCard';
 import { SearchInput } from '@/shared/ui/SearchInput';
-
+import styles from '../styles/event-list.module.css';
 const { Title } = Typography;
 const { Option } = Select;
 
@@ -27,6 +27,15 @@ interface EventListProps {
     userDepartmentRoles: DepartmentRole[];
 }
 
+const EVENT_STATUS_OPTIONS = [
+    { label: 'Published', value: 'PUBLISHED' },
+    { label: 'Closed', value: 'CLOSED' },
+    { label: 'Completed', value: 'COMPLETED' },
+    { label: 'Draft', value: 'DRAFT' },
+    { label: 'Canceled', value: 'CANCELED' },
+    { label: 'Deleted', value: 'DELETED' },
+];
+
 export function EventList({ userDepartmentRoles }: EventListProps) {
     const router = useRouter();
     const { showError } = useAntdMessage();
@@ -34,6 +43,9 @@ export function EventList({ userDepartmentRoles }: EventListProps) {
     const [events, setEvents] = useState<Event[]>([]);
     const [selectedDepartment, setSelectedDepartment] = useState<string>('');
     const [search, setSearch] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 2;
+    const [selectedStatus, setSelectedStatus] = useState<string>('PUBLISHED');
 
     // Set initial department when component mounts
     useEffect(() => {
@@ -67,105 +79,45 @@ export function EventList({ userDepartmentRoles }: EventListProps) {
         setSelectedDepartment(value);
     };
 
-    const getActionItems = (record: Event): MenuItemType[] => [
-        {
-            key: 'view',
-            icon: <EyeOutlined />,
-            label: 'View',
-            onClick: () => router.push(`/organizer/events/${record.id}`),
-        },
-        {
-            key: 'edit',
-            icon: <EditOutlined />,
-            label: 'Edit',
-            onClick: () => router.push(`/organizer/events/${record.id}/edit`),
-        },
-        {
-            key: 'delete',
-            icon: <DeleteOutlined />,
-            label: 'Delete',
-            danger: true,
-            onClick: () => {
-                // TODO: Implement delete functionality
-                console.log('Delete event:', record.id);
-            },
-        },
-    ];
+    // Lọc và sắp xếp event
+    const filteredEvents = events
+        .filter(event =>
+            event.name.toLowerCase().includes(search.toLowerCase()) &&
+            (selectedStatus ? event.status === selectedStatus : true)
+        )
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-    const columns = [
-        {
-            title: 'Event Name',
-            dataIndex: 'name',
-            key: 'name',
-            render: (text: string, record: Event) => (
-                <a onClick={() => router.push(`/organizer/events/${record.id}`)}>{text}</a>
-            ),
-        },
-        {
-            title: 'Type',
-            dataIndex: 'typeName',
-            key: 'typeName',
-        },
-        {
-            title: 'Mode',
-            dataIndex: 'mode',
-            key: 'mode',
-        },
-        {
-            title: 'Audience',
-            dataIndex: 'audience',
-            key: 'audience',
-        },
-        {
-            title: 'Start Time',
-            dataIndex: 'startTime',
-            key: 'startTime',
-            render: (text: string) => new Date(text).toLocaleString(),
-        },
-        {
-            title: 'Status',
-            dataIndex: 'status',
-            key: 'status',
-            render: (status: EventStatus) => (
-                <Tag color={EVENT_STATUS_COLORS[status]}>
-                    {status}
-                </Tag>
-            ),
-        },
-        {
-            title: 'Actions',
-            key: 'actions',
-            width: 80,
-            render: (record: Event) => (
-                <Dropdown
-                    menu={{ items: getActionItems(record) }}
-                    trigger={['click']}
-                    placement="bottomRight"
-                >
-                    <Button
-                        type="text"
-                        icon={<MoreOutlined />}
-                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                    />
-                </Dropdown>
-            ),
-        },
-    ];
-
-    const filteredEvents = events.filter(event =>
-        event.name.toLowerCase().includes(search.toLowerCase())
-    );
+    // Lấy 2 event theo trang
+    const pagedEvents = filteredEvents.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     return (
         <div>
-            <Row justify="space-between" align="middle" style={{ marginBottom: 10, border: '1px solid #d9d9d9', padding: '10px', borderRadius: '8px' }}>
-
+            <Row justify="space-between" align="middle"
+                style={{ marginBottom: 12, border: '1px solid rgba(223, 148, 69, 0.73)', padding: '10px', borderRadius: '8px' }}>
                 <Col flex="1" >
                     <SearchInput
                         value={search}
                         onChange={setSearch}
-                        style={{ width: 300 }}
+                        style={{ width: 250 }}
                         placeholder="Tìm kiếm sự kiện"
+                    />
+                </Col>
+                <Col flex="1" style={{ display: 'flex', justifyContent: 'center', padding: '0 10px' }}>
+                    <Segmented
+                        className={styles.customSegmented}
+                        options={EVENT_STATUS_OPTIONS}
+                        value={selectedStatus}
+                        onChange={setSelectedStatus}
+                        style={{
+                            width: 600,
+                            height: 31.99,
+                            background: '#fff',
+                            borderRadius: 6,
+                            border: '1px solid #e0e0e0',
+                            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
+                            fontWeight: 600,
+                        }}
+                        block
                     />
                 </Col>
                 <Col>
@@ -173,7 +125,7 @@ export function EventList({ userDepartmentRoles }: EventListProps) {
                         <Select
                             value={selectedDepartment}
                             onChange={handleDepartmentChange}
-                            style={{ width: 200 }}
+                            style={{ width: 180 }}
                             placeholder="Select Department"
                         >
                             {userDepartmentRoles.map((dept) => (
@@ -186,13 +138,15 @@ export function EventList({ userDepartmentRoles }: EventListProps) {
                             type="primary"
                             onClick={() => router.push('/organizer/create')}
                         >
-                            Create New Event
+                            Create Event
                         </Button>
                     </Space>
                 </Col>
             </Row>
 
-            {filteredEvents.map(event => (
+
+
+            {pagedEvents.map(event => (
                 <EventCard
                     key={event.id}
                     event={event}
@@ -202,6 +156,16 @@ export function EventList({ userDepartmentRoles }: EventListProps) {
                     onSurvey={() => router.push(`/organizer/events/${event.id}/survey`)}
                 />
             ))}
+
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
+                <Pagination
+                    current={currentPage}
+                    pageSize={pageSize}
+                    total={filteredEvents.length}
+                    onChange={setCurrentPage}
+                    showSizeChanger={false}
+                />
+            </div>
         </div>
     );
 } 
