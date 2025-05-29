@@ -3,3 +3,9 @@
     padding: 10px !important;
 
 }
+
+.customTagSelect :global(.ant-select-selection-overflow .ant-select-selection-item) {
+    border-radius: 12px;
+    border: 1px solid #81818186;
+
+}

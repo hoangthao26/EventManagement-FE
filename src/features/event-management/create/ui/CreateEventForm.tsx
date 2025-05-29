@@ -1,16 +1,19 @@
 'use client';
 
-import { useState } from 'react';
-import { Form, Input, DatePicker, Select, InputNumber, Button, Card, Row, Col, Radio, Typography, message } from 'antd';
+import { useState, useEffect, useRef } from 'react';
+import { Form, Input, DatePicker, Select, InputNumber, Button, Card, Row, Col, Radio, Typography, Upload } from 'antd';
 import { ImageUpload } from './ImageUpload';
 import { EVENT_TYPES } from '../lib/constants';
 import { Editor } from '@tinymce/tinymce-react';
-import type { CreateEventData } from '../model/types';
-
+import { InboxOutlined } from '@ant-design/icons';
+import { fetchEventTypes, fetchActiveTags } from '../api';
+import styles from '../styles/ImageUpload.module.css';
+import { useRouter } from 'next/navigation';
+import { useAntdMessage } from '@/shared/lib/hooks/useAntdMessage';
 const { Title } = Typography;
 
 interface CreateEventFormProps {
-    onSubmit: (data: CreateEventData) => void;
+    onSubmit: (data: any) => void;
     loading?: boolean;
     departments: { departmentName: string; departmentCode: string }[];
 }
@@ -54,15 +57,57 @@ async function uploadToCloudinary(file: File, type: ImageType, eventName: string
     }
 }
 
+// Hàm xóa ảnh bằng delete_token
+const deleteFailedUploads = async (deleteTokens: string[]) => {
+    for (const token of deleteTokens) {
+        await fetch(
+            `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/delete_by_token`,
+            {
+                method: 'POST',
+                body: (() => {
+                    const fd = new FormData();
+                    fd.append('token', token);
+                    return fd;
+                })(),
+            }
+        );
+    }
+};
+
 export function CreateEventForm({ onSubmit, loading, departments }: CreateEventFormProps) {
     const [form] = Form.useForm();
+    const editorRef = useRef<any>(null);
+    const router = useRouter();
+    const { showSuccess, showError } = useAntdMessage();
     const [isOnline, setIsOnline] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [eventTypes, setEventTypes] = useState([]);
+    const [tags, setTags] = useState([]);
+    const [imageFiles, setImageFiles] = useState<File[]>([]);
+    const [audience, setAudience] = useState('STUDENT');
+    const [imageList, setImageList] = useState<any[]>([]);
+
+    useEffect(() => {
+        fetchEventTypes().then(setEventTypes);
+        fetchActiveTags().then(setTags);
+    }, []);
+
+    const handleImageChange = (files: File[]) => {
+        setImageFiles(files);
+    };
+
+    const handleImageWallChange = ({ fileList }: { fileList: any[] }) => {
+        setImageList(fileList);
+    };
 
     const handleSubmit = async (values: any) => {
+        let uploadedDeleteTokens: string[] = [];
         try {
             setSubmitting(true);
-            const eventName = values.title;
+            const eventName = values.name;
+
+            // Lấy nội dung từ TinyMCE Editor
+            const description = editorRef.current ? editorRef.current.getContent() : '';
 
             // Upload poster
             let posterUrl = values.poster;
@@ -76,33 +121,102 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
                 bannerUrl = await uploadToCloudinary(bannerUrl, 'banner', eventName);
             }
 
-            onSubmit({
-                ...values,
-                poster: posterUrl,
-                banner: bannerUrl,
-                startTime: values.timeRange[0].toDate(),
-                endTime: values.timeRange[1].toDate(),
-            });
+            // Upload imageUrls (gallery)
+            let imageUrls: string[] = [];
+            for (let i = 0; i < imageList.length; i++) {
+                const file = imageList[i].originFileObj;
+                if (file) {
+                    const timestamp = new Date().getTime();
+                    const publicId = `gallery/${eventName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${timestamp}_${i + 1}`;
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('upload_preset', 'upload_gallery');
+                    formData.append('public_id', publicId);
+                    const response = await fetch(
+                        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+                        {
+                            method: 'POST',
+                            body: formData,
+                        }
+                    );
+                    const data = await response.json();
+                    if (data.secure_url) imageUrls.push(data.secure_url);
+                    if (data.delete_token) uploadedDeleteTokens.push(data.delete_token);
+                }
+            }
+
+            // Build address
+            const location = {
+                address: values.address,
+                ward: values.ward,
+                district: values.district,
+                city: values.city,
+            };
+
+            // Build roleCapacities
+            const roleCapacities = [];
+            if (values.studentCapacity) {
+                roleCapacities.push({ roleName: 'STUDENT', maxCapacity: values.studentCapacity });
+            }
+            if (values.lecturerCapacity) {
+                roleCapacities.push({ roleName: 'LECTURER', maxCapacity: values.lecturerCapacity });
+            }
+
+            // Build platform
+            let platform = undefined;
+            if (isOnline) {
+                platform = {
+                    name: values.platformName,
+                    url: values.platformUrl,
+                };
+            }
+
+            // Build payload đúng chuẩn backend
+            const payload = {
+                name: values.name,
+                description, // Sử dụng nội dung từ TinyMCE Editor
+                typeId: values.typeId,
+                audience: values.audience,
+                posterUrl,
+                bannerUrl,
+                mode: isOnline ? 'ONLINE' : 'OFFLINE',
+                location,
+                maxCapacity: (values.studentCapacity || 0) + (values.lecturerCapacity || 0),
+                roleCapacities,
+                platform: isOnline ? { name: values.platformName, url: values.platformUrl } : undefined,
+                tags: values.tags,
+                imageUrls,
+                startTime: values.timeRange[0].toISOString(),
+                endTime: values.timeRange[1].toISOString(),
+                registrationStart: values.registrationTimeRange[0].toISOString(),
+                registrationEnd: values.registrationTimeRange[1].toISOString(),
+            };
+
+            // Gọi API tạo event
+            await onSubmit({ ...payload, departmentCode: values.departmentCode });
+            // Hiển thị thông báo thành công
+            showSuccess('Event created successfully!');
+            // Chuyển hướng sang trang organizer/my-events sau khi tạo thành công
+            router.push('/organizer/my-events');
         } catch (err) {
             console.error('Error creating event:', err);
-            message.error('Failed to upload images or create event');
+            showError('Failed to upload images or create event');
+            if (uploadedDeleteTokens.length > 0) {
+                await deleteFailedUploads(uploadedDeleteTokens);
+            }
         } finally {
             setSubmitting(false);
         }
     };
 
     return (
-
         <Form
             form={form}
             layout="vertical"
             onFinish={handleSubmit}
             initialValues={{
-                capacity: {
-                    student: 0,
-                    lecturer: 0,
-                },
                 isOnline: false,
+                audience: 'STUDENT',
             }}
         >
             <div style={{ fontWeight: 'bold', color: '#222', marginBottom: 8 }}>
@@ -116,7 +230,6 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
                         style={{ marginBottom: 0 }}
                     >
                         <ImageUpload type="POSTER" height={350} />
-
                     </Form.Item>
                 </Col>
                 <Col xs={24} md={18}>
@@ -129,35 +242,180 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
                     </Form.Item>
                 </Col>
             </Row>
+            <Row gutter={16}>
+                <Col xs={24} md={12}>
+                    <Form.Item
+                        label={<b>Event name</b>}
+                        name="name"
+                        rules={[{ required: true, message: 'Please enter event name' }]}
+                    >
+                        <Input maxLength={100} placeholder="Event name" />
+                    </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                    <Form.Item
+                        label={<b>Department</b>}
+                        name="departmentCode"
+                        rules={[{ required: true, message: 'Please select department' }]}
+                    >
+                        <Select
+                            options={departments.map(dep => ({ label: dep.departmentName, value: dep.departmentCode }))}
+                            placeholder="Select department"
+                        />
+                    </Form.Item>
+                </Col>
+            </Row>
+            <Row gutter={16}>
+                <Col xs={24} md={12}>
+                    <Form.Item
+                        label={<b>Event type</b>}
+                        name="typeId"
+                        rules={[{ required: true, message: 'Please select event type' }]}
+                    >
+                        <Select
 
-            <Form.Item
-                label={<b>Event name</b>}
-                name="title"
-                rules={[{ required: true, message: 'Please enter event name' }]}
-            >
-                <Input maxLength={100} placeholder="Event name" />
-            </Form.Item>
+                            options={eventTypes.map((t: any) => ({ label: t.name, value: t.id }))}
+                            placeholder="Select event type"
+                        />
+                    </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                    <Form.Item
+                        label={<b>Tags</b>}
+                        name="tags"
+                        rules={[{ required: true, message: 'Please select tags' }]}
+                    >
+                        <Select
+                            mode="multiple"
+                            className={styles.customTagSelect}
+                            options={tags.map((t: any) => ({ label: t.name, value: t.id }))}
+                            placeholder="Select tags"
+                        />
+                    </Form.Item>
+                </Col>
+            </Row>
 
-            <Form.Item label={<b>Event type</b>} name="isOnline" style={{ marginBottom: 8 }}>
-                <Radio.Group
-                    onChange={(e: any) => setIsOnline(e.target.value)}
-                    optionType="button"
-                    buttonStyle="solid"
-                >
-                    <Radio value={false}>Offline event</Radio>
-                    <Radio value={true}>Online event</Radio>
+            <Row gutter={16} align="middle">
+                <Col xs={24} md={8}>
+                    <Form.Item
+                        label={<b>Audience</b>}
+                        name="audience"
+                        rules={[{ required: true, message: 'Please select audience' }]}
+                    >
+                        <Select
+                            options={[
+                                { label: 'Student', value: 'STUDENT' },
+                                { label: 'Lecturer', value: 'LECTURER' },
+                                { label: 'Both', value: 'BOTH' }
+                            ]}
+                            onChange={setAudience}
+                        />
+                    </Form.Item>
+                </Col>
+                <Col xs={24} md={16}>
+
+                    <Row gutter={16}>
+                        {(audience === 'STUDENT' || audience === 'BOTH') && (
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Student capacity"
+                                    name="studentCapacity"
+                                    rules={[{ required: audience === 'STUDENT' || audience === 'BOTH', message: 'Please enter student capacity' }]}
+                                >
+                                    <InputNumber min={0} style={{ width: '100%' }} placeholder="Student capacity" />
+                                </Form.Item>
+                            </Col>
+                        )}
+                        {(audience === 'LECTURER' || audience === 'BOTH') && (
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Lecturer capacity"
+                                    name="lecturerCapacity"
+                                    rules={[{ required: audience === 'LECTURER' || audience === 'BOTH', message: 'Please enter lecturer capacity' }]}
+                                >
+                                    <InputNumber min={0} style={{ width: '100%' }} placeholder="Lecturer capacity" />
+                                </Form.Item>
+                            </Col>
+                        )}
+                    </Row>
+                </Col>
+            </Row>
+
+
+
+            <Form.Item label={<b>Mode</b>} name="mode" initialValue={isOnline ? 'ONLINE' : 'OFFLINE'}>
+                <Radio.Group onChange={(e: any) => setIsOnline(e.target.value === 'ONLINE')}>
+                    <Radio value="OFFLINE">Offline</Radio>
+                    <Radio value="ONLINE">Online</Radio>
                 </Radio.Group>
             </Form.Item>
 
-            {!isOnline && (
-                <Form.Item
-                    label={<b>Address</b>}
-                    name="address"
-                    rules={[{ required: true, message: 'Please enter event address' }]}
-                >
-                    <Input maxLength={80} placeholder="Event address" />
-                </Form.Item>
-            )}
+            {
+                !isOnline && (
+                    <Row gutter={16}>
+                        <Col xs={24} md={6}>
+                            <Form.Item
+                                label="Address"
+                                name="address"
+                                rules={[{ required: true, message: 'Please enter address' }]}
+                            >
+                                <Input placeholder="Address" />
+                            </Form.Item>
+                        </Col>
+                        <Col xs={24} md={6}>
+                            <Form.Item
+                                label="Ward"
+                                name="ward"
+                                rules={[{ required: true, message: 'Please enter ward' }]}
+                            >
+                                <Input placeholder="Ward" />
+                            </Form.Item>
+                        </Col>
+                        <Col xs={24} md={6}>
+                            <Form.Item
+                                label="District"
+                                name="district"
+                                rules={[{ required: true, message: 'Please enter district' }]}
+                            >
+                                <Input placeholder="District" />
+                            </Form.Item>
+                        </Col>
+                        <Col xs={24} md={6}>
+                            <Form.Item
+                                label="City"
+                                name="city"
+                                rules={[{ required: true, message: 'Please enter city' }]}
+                            >
+                                <Input placeholder="City" />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+                )
+            }
+            {
+                isOnline && (
+                    <Row gutter={16}>
+                        <Col xs={24} md={12}>
+                            <Form.Item
+                                label="Platform name"
+                                name="platformName"
+                                rules={[{ required: true, message: 'Please enter platform name' }]}
+                            >
+                                <Input placeholder="Platform name" />
+                            </Form.Item>
+                        </Col>
+                        <Col xs={24} md={12}>
+                            <Form.Item
+                                label="Platform URL"
+                                name="platformUrl"
+                                rules={[{ required: true, message: 'Please enter platform URL' }]}
+                            >
+                                <Input placeholder="Platform URL" />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+                )
+            }
 
             <Row gutter={16}>
                 <Col xs={24} md={12}>
@@ -180,38 +438,17 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
                 </Col>
             </Row>
 
-            <Form.Item
-                label={<b>Event category</b>}
-                name="type"
-                rules={[{ required: true, message: 'Please select event category' }]}
-            >
-                <Select options={EVENT_TYPES} placeholder="Select event category" />
+            <Form.Item label={<b>Gallery images</b>} name="imageUrls">
+                <Upload
+                    listType="picture-card"
+                    fileList={imageList}
+                    onChange={handleImageWallChange}
+                    beforeUpload={() => false}
+                    multiple
+                >
+                    {imageList.length < 8 && '+ Upload'}
+                </Upload>
             </Form.Item>
-
-            <div style={{ marginBottom: 24 }}>
-                <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 8 }}>Capacity</div>
-                <Row gutter={16}>
-                    <Col xs={24} md={12}>
-                        <Form.Item
-                            label="Student capacity"
-                            name={['capacity', 'student']}
-                            rules={[{ required: true, message: 'Please enter student capacity' }]}
-                        >
-                            <InputNumber min={0} style={{ width: '100%' }} placeholder="Student capacity" />
-                        </Form.Item>
-                    </Col>
-                    <Col xs={24} md={12}>
-                        <Form.Item
-                            label="Lecturer capacity"
-                            name={['capacity', 'lecturer']}
-                            rules={[{ required: true, message: 'Please enter lecturer capacity' }]}
-                        >
-                            <InputNumber min={0} style={{ width: '100%' }} placeholder="Lecturer capacity" />
-                        </Form.Item>
-                    </Col>
-                </Row>
-            </div>
-
             <Form.Item
                 label={<b>Description</b>}
                 name="description"
@@ -219,52 +456,28 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
             >
                 <Editor
                     apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY}
+                    onInit={(_evt, editor) => editorRef.current = editor}
                     init={{
                         height: 300,
                         menubar: false,
-                        branding: false,
                         plugins: [
                             'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
                             'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
                             'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
                         ],
-                        toolbar:
-                            'undo redo | blocks fontsize | bold italic underline forecolor backcolor | ' +
-                            'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | ' +
-                            'removeformat | image media code',
+                        toolbar: 'undo redo | blocks | ' +
+                            'bold italic forecolor | alignleft aligncenter ' +
+                            'alignright alignjustify | bullist numlist outdent indent | ' +
+                            'removeformat | help',
                         content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
                     }}
                 />
             </Form.Item>
-
-            <Form.Item
-                label={<b>Department</b>}
-                name="departmentCode"
-                rules={[{ required: true, message: 'Please select department' }]}
-            >
-                <Select
-                    placeholder="Select department"
-                    options={departments.map(dep => ({
-                        label: dep.departmentName,
-                        value: dep.departmentCode
-                    }))}
-                />
-            </Form.Item>
-
-            <Form.Item
-                label={<b>Department info</b>}
-                name="departmentInfo"
-                rules={[{ required: true, message: 'Please enter department info' }]}
-            >
-                <Input.TextArea rows={4} placeholder="Department info" />
-            </Form.Item>
-
             <Form.Item>
                 <Button type="primary" htmlType="submit" loading={loading || submitting} block>
                     Create Event
                 </Button>
             </Form.Item>
-        </Form>
-
+        </Form >
     );
 } 
