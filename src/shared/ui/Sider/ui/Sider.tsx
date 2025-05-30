@@ -31,11 +31,18 @@ export const Sider: React.FC<SiderProps> = ({ collapsed }) => {
         // Dashboard chỉ hiển thị cho ADMIN và LECTURER
         if (hasRole('ADMIN') || hasRole('LECTURER')) {
             items.push({
-                key: '/dashboard',
+                key: '/admin',
                 icon: <DashboardOutlined />,
                 label: 'Dashboard',
-                onClick: () => router.push('/dashboard'),
-            });
+                onClick: () => router.push('/admin'),
+            },
+            {
+                key: '/departments',
+                icon: <TeamOutlined />,
+                label: 'Departments',
+                onClick: () => router.push('/departments'),
+            }
+        );
         }
 
         // Events menu cho tất cả roles
