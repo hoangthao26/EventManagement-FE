@@ -1,10 +1,11 @@
 "use client"
 
-import DashboardLayout from "@/components/DashboardLayout";
+import DashboardLayout from "@/widgets/layouts/ui/DashboardLayout";
 import { Table } from "antd";
 import { useEffect } from "react";
 import { useState } from "react";
 import { useAuth } from "@/features/auth/model/useAuth";
+import axios from "axios";
 export default function DepartmentsPage() {
     const { session, status } = useAuth();
     const [data, setData] = useState([])
@@ -37,8 +38,12 @@ export default function DepartmentsPage() {
     
     useEffect(() => {
         const fetchData = async () => {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/departments`)
-            const data = await response.json()
+            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/departments`, {
+                headers: {
+                    Authorization: `Bearer ${session?.accessToken}`
+                }   
+            })
+            const data = await response.data
             setData(data)
         }
         fetchData()

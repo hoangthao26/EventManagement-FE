@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/features/auth/model/useAuth";
-import DashboardLayout from "@/components/DashboardLayout";
-import Loading from "@/components/Loading";
+import DashboardLayout from "@/widgets/layouts/ui/DashboardLayout";
+import Loading from "@/shared/ui/Loading";
 import { Card, Typography, Row, Col, Statistic, Select, Divider } from "antd";
 import {
     UserOutlined,
@@ -155,7 +155,7 @@ export default function AdminDashboardPage() {
                             <Statistic
                                 title="Total Students"
                                 value={stats.totalStudents}
-                                prefix={<TeamOutlined />}
+                                prefix={<UserOutlined />}
                                 valueStyle={{ fontSize: 16 }}
                             />
                             <Statistic
