@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/features/auth/model/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
 import Loading from "@/components/Loading";
-import { Card, Typography, Row, Col, Statistic, Select } from "antd";
+import { Card, Typography, Row, Col, Statistic, Select, Divider } from "antd";
 import {
     UserOutlined,
     TeamOutlined,
@@ -143,27 +143,28 @@ export default function AdminDashboardPage() {
                     <AntTitle level={2}>Admin Dashboard</AntTitle>
 
                 {/* Thống kê tổng quan */}
-                <Row gutter={[16, 16]} className="mb-6">
+                <Row gutter={[16, 16]} className="mb-6" style={{ marginBottom: '20px' }}>
                     <Col xs={24} sm={12} md={6}>
-                        <Card>
+                        <Card style={{ height: '100%' }}>
                             <Statistic
                                 title="Total Users"
                                 value={stats.totalUsers}
                                 prefix={<TeamOutlined />}
                             />
+                            <div style={{ marginTop: '10px' }}>
                             <Statistic
                                 title="Total Students"
                                 value={stats.totalStudents}
                                 prefix={<TeamOutlined />}
                                 valueStyle={{ fontSize: 16 }}
                             />
-
                             <Statistic
                                 title="Total Lecturers"
                                 value={stats.totalLecturers}
                                 prefix={<UserOutlined />}
                                 valueStyle={{ fontSize: 16 }}
                             />
+                            </div>
                         </Card>
                     </Col>
                     <Col md={18}>
@@ -198,7 +199,7 @@ export default function AdminDashboardPage() {
                                 </Card>
                             </Col>
                         </Row>
-                        <Row gutter={[16, 16]} className="mb-6" justify="center">
+                        <Row gutter={[16, 16]} className="mb-6" justify="center" style={{ marginTop: '10px' }}>
                             <Col xs={24} sm={12} md={8}>
                                 <Card>
                                     <Statistic
@@ -224,11 +225,11 @@ export default function AdminDashboardPage() {
 
                 {/* Biểu đồ và thống kê chi tiết */}
                 <Row gutter={[16, 16]} className="mb-6">
-                    <Col xs={24} lg={16}>
+                    <Col xs={24}>
                         <Card
                             title={
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                    <span>Event Registrations Over Time</span>
+                                    <span>Event Statistics by Year</span>
                                     <Select
                                         value={selectedYear}
                                         style={{ width: 100 }}
@@ -238,12 +239,17 @@ export default function AdminDashboardPage() {
                                 </div>
                             }
                         >
-                            <Line data={registrationChartData} />
-                        </Card>
-                    </Col>
-                    <Col xs={24} lg={8}>
-                        <Card title="Event Types Distribution">
-                            <Pie data={eventTypeChartData} />
+                            <Row gutter={[16, 16]}>
+                                <Col xs={24} lg={15}>
+                                    <Line data={registrationChartData} />
+                                </Col>
+                                <Col xs={24} lg={1}>
+                                    <Divider type="vertical" style={{ height: '100%' }} />
+                                </Col>
+                                <Col xs={24} lg={8}>
+                                    <Pie data={eventTypeChartData} />
+                                </Col>
+                            </Row>
                         </Card>
                     </Col>
                 </Row>
