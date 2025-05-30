@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/features/auth/model/useAuth";
-import HomeLayout from "@/components/HomeLayout";
-import Loading from "@/components/Loading";
+import Loading from "@/shared/ui/Loading";
 import { Card, Typography, Row, Col, Input, Select, Empty, Tag, Space, Button } from "antd";
 import { useRouter } from "next/navigation";
 import { SearchOutlined, CalendarOutlined, EnvironmentOutlined, TeamOutlined, ClearOutlined } from "@ant-design/icons";
 import { format } from "date-fns";
+import HomeLayout from "@/widgets/layouts/ui/HomeLayout"; // Update import
 
 const { Title, Paragraph, Text } = Typography;
 const { Search } = Input;

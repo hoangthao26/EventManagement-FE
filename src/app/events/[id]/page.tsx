@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Typography, Card, Space, Tag, Button, notification, Image, Descriptions, Row, Col, Statistic } from 'antd';
-import { ClockCircleOutlined, EnvironmentOutlined, TeamOutlined, CheckCircleOutlined, CalendarOutlined, ShareAltOutlined } from '@ant-design/icons';
+import { Typography, Card, Space, Tag, Button, notification, Image, Descriptions, Row, Col, Statistic, Result } from 'antd';
+import { ClockCircleOutlined, EnvironmentOutlined, TeamOutlined, CheckCircleOutlined, CalendarOutlined, ShareAltOutlined, HomeOutlined, ArrowLeftOutlined, SearchOutlined } from '@ant-design/icons';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import Loading from '@/components/Loading';
+import Loading from '@/shared/ui/Loading';
 import { useAuth } from '@/features/auth/model/useAuth';
 import { useApi } from '@/lib/useApi';
+import HomeLayout from "@/widgets/layouts/ui/HomeLayout"; // Add this import
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -116,12 +117,48 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
 
     if (!event) {
         return (
-            <div className="text-center py-12">
-                <Title level={3}>Event not found</Title>
-                <Button type="primary" onClick={() => router.push('/events')}>
-                    Back to Events
-                </Button>
+            <HomeLayout>
+            <div className="min-h-screen flex items-center justify-center">
+                <Result
+                    status="404"
+                    title={<Title level={1} style={{ fontSize: '64px' }}>404</Title>}
+                    subTitle={
+                        <div className="text-center">
+                            <Title level={3}>Trang không tồn tại</Title>
+                            <Text type="secondary">
+                                Trang bạn đang tìm kiếm không tồn tại!
+                            </Text>
+                        </div>
+                    }
+                    extra={
+                        <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                            <Space wrap>
+                                <Button
+                                    type="primary"
+                                    icon={<HomeOutlined />}
+                                    onClick={() => router.push('/')}
+                                >
+                                    Về trang chủ
+                                </Button>
+                                <Button
+                                    icon={<SearchOutlined />}
+                                    onClick={() => router.push('/events')}
+                                >
+                                    Các sự kiện
+                                </Button>
+                                <Button
+                                    type="text"
+                                    icon={<ArrowLeftOutlined />}
+                                    onClick={() => router.back()}
+                                >
+                                    Quay lại
+                                </Button>
+                            </Space>
+                        </Space>
+                    }
+                />
             </div>
+            </HomeLayout>
         );
     }
 
@@ -129,147 +166,149 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
                              new Date() <= new Date(event.registrationEnd);
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Banner */}
-            <div style={{ position: 'relative', height: '400px', overflow: 'hidden' }}>
-                <Image
-                    src={event.bannerUrl}
-                    alt={event.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    preview={false}
-                />
-                <div style={{ 
-                    position: 'absolute', 
-                    bottom: 0, 
-                    left: 0, 
-                    right: 0,
-                    padding: '2rem',
-                    background: 'linear-gradient(transparent, rgba(0,0,0,0.7))'
-                }}>
-                    <div className="container mx-auto">
-                        <Title level={1} style={{ color: 'white', margin: 0 }}>{event.name}</Title>
-                        <Space size={[0, 8]} wrap>
-                            <Tag color="blue">{event.typeName}</Tag>
-                            <Tag color="green">{event.mode}</Tag>
-                            {event.tags.map(tag => (
-                                <Tag key={tag.id}>{tag.name}</Tag>
-                            ))}
-                        </Space>
+        <HomeLayout>
+            <div className="min-h-screen bg-gray-50">
+                {/* Banner */}
+                <div style={{ position: 'relative', height: '400px', overflow: 'hidden' }}>
+                    <Image
+                        src={event.bannerUrl}
+                        alt={event.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        preview={false}
+                    />
+                    <div style={{ 
+                        position: 'absolute', 
+                        bottom: 0, 
+                        left: 0, 
+                        right: 0,
+                        padding: '2rem',
+                        background: 'linear-gradient(transparent, rgba(0,0,0,0.7))'
+                    }}>
+                        <div className="container mx-auto">
+                            <Title level={1} style={{ color: 'white', margin: 0 }}>{event.name}</Title>
+                            <Space size={[0, 8]} wrap>
+                                <Tag color="blue">{event.typeName}</Tag>
+                                <Tag color="green">{event.mode}</Tag>
+                                {event.tags.map(tag => (
+                                    <Tag key={tag.id}>{tag.name}</Tag>
+                                ))}
+                            </Space>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div className="container mx-auto py-8 px-4">
-                <Row gutter={[32, 32]}>
-                    {/* Main Content */}
-                    <Col xs={24} lg={16}>
-                        <Card className="mb-6">
-                            <Title level={3}>About the Event</Title>
-                            <Paragraph>{event.description}</Paragraph>
-                        </Card>
-
-                        {event.images.length > 0 && (
+                <div className="container mx-auto py-8 px-4">
+                    <Row gutter={[32, 32]}>
+                        {/* Main Content */}
+                        <Col xs={24} lg={16}>
                             <Card className="mb-6">
-                                <Title level={3}>Event Images</Title>
-                                <Image.PreviewGroup>
-                                    <Row gutter={[16, 16]}>
-                                        {event.images.map(image => (
-                                            <Col span={8} key={image.id}>
-                                                <Image
-                                                    src={image.url}
-                                                    alt="Event"
-                                                    style={{ objectFit: 'cover', borderRadius: '8px' }}
-                                                />
-                                            </Col>
-                                        ))}
-                                    </Row>
-                                </Image.PreviewGroup>
+                                <Title level={3}>About the Event</Title>
+                                <Paragraph>{event.description}</Paragraph>
                             </Card>
-                        )}
-                    </Col>
 
-                    {/* Sidebar */}
-                    <Col xs={24} lg={8}>
-                        <Card className="mb-6">
-                            <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                                <Descriptions column={1}>
-                                    <Descriptions.Item label={<><ClockCircleOutlined /> Time</>}>
-                                        {format(new Date(event.startTime), 'PPp')} - 
-                                        {format(new Date(event.endTime), 'PPp')}
-                                    </Descriptions.Item>
-                                    <Descriptions.Item label={<><EnvironmentOutlined /> Location</>}>
-                                        {event.mode === 'ONLINE' ? (
-                                            <>{event.platformName}</>
-                                        ) : (
-                                            <>{event.locationAddress}<br/>{event.locationAddress2}</>
+                            {event.images.length > 0 && (
+                                <Card className="mb-6">
+                                    <Title level={3}>Event Images</Title>
+                                    <Image.PreviewGroup>
+                                        <Row gutter={[16, 16]}>
+                                            {event.images.map(image => (
+                                                <Col span={8} key={image.id}>
+                                                    <Image
+                                                        src={image.url}
+                                                        alt="Event"
+                                                        style={{ objectFit: 'cover', borderRadius: '8px' }}
+                                                    />
+                                                </Col>
+                                            ))}
+                                        </Row>
+                                    </Image.PreviewGroup>
+                                </Card>
+                            )}
+                        </Col>
+
+                        {/* Sidebar */}
+                        <Col xs={24} lg={8}>
+                            <Card className="mb-6">
+                                <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                                    <Descriptions column={1}>
+                                        <Descriptions.Item label={<><ClockCircleOutlined /> Time</>}>
+                                            {format(new Date(event.startTime), 'PPp')} - 
+                                            {format(new Date(event.endTime), 'PPp')}
+                                        </Descriptions.Item>
+                                        <Descriptions.Item label={<><EnvironmentOutlined /> Location</>}>
+                                            {event.mode === 'ONLINE' ? (
+                                                <>{event.platformName}</>
+                                            ) : (
+                                                <>{event.locationAddress}<br/>{event.locationAddress2}</>
+                                            )}
+                                        </Descriptions.Item>
+                                    </Descriptions>
+
+                                    <div>
+                                        <Title level={5}>Registration Period</Title>
+                                        <Text>
+                                            <CalendarOutlined /> {format(new Date(event.registrationStart), 'PP')} - 
+                                            {format(new Date(event.registrationEnd), 'PP')}
+                                        </Text>
+                                    </div>
+
+                                    <Space direction="vertical" style={{ width: '100%' }}>
+                                        <Statistic 
+                                            title="Total Registered" 
+                                            value={event.registeredCount} 
+                                            suffix={`/ ${event.maxCapacity}`}
+                                        />
+                                        {event.audience === 'BOTH' && (
+                                            <>
+                                                <Statistic 
+                                                    title="Students Registered" 
+                                                    value={event.registeredCountStudent} 
+                                                    suffix={`/ ${event.maxCapacityStudent}`}
+                                                />
+                                                <Statistic 
+                                                    title="Lecturers Registered" 
+                                                    value={event.registeredCountLecturer} 
+                                                    suffix={`/ ${event.maxCapacityLecturer}`}
+                                                />
+                                            </>
                                         )}
-                                    </Descriptions.Item>
-                                </Descriptions>
+                                    </Space>
 
-                                <div>
-                                    <Title level={5}>Registration Period</Title>
-                                    <Text>
-                                        <CalendarOutlined /> {format(new Date(event.registrationStart), 'PP')} - 
-                                        {format(new Date(event.registrationEnd), 'PP')}
-                                    </Text>
-                                </div>
+                                    <Button
+                                        type="primary"
+                                        size="large"
+                                        block
+                                        onClick={handleRegister}
+                                        disabled={!isRegistrationOpen || event.isRegistered || registering}
+                                        icon={event.isRegistered ? <CheckCircleOutlined /> : undefined}
+                                    >
+                                        {event.isRegistered 
+                                            ? 'Already Registered' 
+                                            : registering 
+                                                ? 'Registering...' 
+                                                : 'Register Now'}
+                                    </Button>
 
-                                <Space direction="vertical" style={{ width: '100%' }}>
-                                    <Statistic 
-                                        title="Total Registered" 
-                                        value={event.registeredCount} 
-                                        suffix={`/ ${event.maxCapacity}`}
-                                    />
-                                    {event.audience === 'BOTH' && (
-                                        <>
-                                            <Statistic 
-                                                title="Students Registered" 
-                                                value={event.registeredCountStudent} 
-                                                suffix={`/ ${event.maxCapacityStudent}`}
-                                            />
-                                            <Statistic 
-                                                title="Lecturers Registered" 
-                                                value={event.registeredCountLecturer} 
-                                                suffix={`/ ${event.maxCapacityLecturer}`}
-                                            />
-                                        </>
+                                    {!isRegistrationOpen && (
+                                        <Text type="secondary">
+                                            Registration is {new Date() < new Date(event.registrationStart) 
+                                                ? 'not yet open' 
+                                                : 'closed'}
+                                        </Text>
                                     )}
                                 </Space>
+                            </Card>
 
-                                <Button
-                                    type="primary"
-                                    size="large"
-                                    block
-                                    onClick={handleRegister}
-                                    disabled={!isRegistrationOpen || event.isRegistered || registering}
-                                    icon={event.isRegistered ? <CheckCircleOutlined /> : undefined}
-                                >
-                                    {event.isRegistered 
-                                        ? 'Already Registered' 
-                                        : registering 
-                                            ? 'Registering...' 
-                                            : 'Register Now'}
-                                </Button>
-
-                                {!isRegistrationOpen && (
-                                    <Text type="secondary">
-                                        Registration is {new Date() < new Date(event.registrationStart) 
-                                            ? 'not yet open' 
-                                            : 'closed'}
-                                    </Text>
-                                )}
-                            </Space>
-                        </Card>
-
-                        <Card>
-                            <Title level={5}>Share Event</Title>
-                            <Space>
-                                <Button icon={<ShareAltOutlined />}>Share</Button>
-                            </Space>
-                        </Card>
-                    </Col>
-                </Row>
+                            <Card>
+                                <Title level={5}>Share Event</Title>
+                                <Space>
+                                    <Button icon={<ShareAltOutlined />}>Share</Button>
+                                </Space>
+                            </Card>
+                        </Col>
+                    </Row>
+                </div>
             </div>
-        </div>
+        </HomeLayout>
     );
 }
