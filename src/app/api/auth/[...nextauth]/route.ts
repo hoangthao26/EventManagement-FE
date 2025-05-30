@@ -3,9 +3,10 @@ import GoogleProvider from "next-auth/providers/google";
 import axios from "axios";
 import { UserRole } from "@/types/next-auth";
 
-// Tạo instance axios với timeout dài hơn
-const api = axios.create({
-    timeout: 10000, // 10 seconds
+// Tạo instance axios với timeout dài hơn cho NextAuth
+const authAxiosInstance = axios.create({
+    baseURL: process.env.NEXT_PUBLIC_API_URL,
+    timeout: 30000, // Tăng timeout cho NextAuth
     headers: {
         'Content-Type': 'application/json'
     }
@@ -32,21 +33,26 @@ const handler = NextAuth({
                     // Log idToken từ Google
                     console.log('Google idToken:', {
                         idToken: account.id_token,
-
                     });
 
                     // Send id_token to backend for verification
-                    const response = await axios.post(
-                        `${process.env.NEXT_PUBLIC_API_URL}/auth/google`,
+                    const response = await authAxiosInstance.post(
+                        '/auth/google',
                         {
                             idToken: account.id_token
                         }
                     );
 
-                    // Log ở server-side (terminal)
-                    console.log('Google Auth Server Response:', {
-                        status: response.status,
-                        data: response.data
+                    // Log response từ backend
+                    console.log('Backend Auth Response:', {
+                        token: response.data.token,
+                        refreshToken: response.data.refreshToken,
+                        type: response.data.type,
+                        id: response.data.id,
+                        email: response.data.email,
+                        fullName: response.data.fullName,
+                        roles: response.data.roles,
+                        userDepartmentRoles: response.data.userDepartmentRoles
                     });
 
                     if (response.data) {
@@ -62,8 +68,6 @@ const handler = NextAuth({
                             userDepartmentRoles: response.data.userDepartmentRoles
                         };
 
-                        // Pass response data to client
-                        account.response = response.data;
                         return true;
                     }
                 } catch (error: any) {
@@ -87,6 +91,7 @@ const handler = NextAuth({
                     name?: string;
                     image?: string;
                     roles?: UserRole[];
+                    userDepartmentRoles?: any[];
                 };
             }
             return token;
@@ -101,7 +106,7 @@ const handler = NextAuth({
                 };
             }
             return session;
-        },
+        }
     },
     pages: {
         signIn: "/login",

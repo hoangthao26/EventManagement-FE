@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/features/auth/model/useAuth";
 
-import Loading from "@/components/Loading";
+import Loading from "@/shared/ui/Loading";
 import { Typography, Form, Input, Button, Card, message } from "antd";
 import { useRouter } from "next/navigation";
 
