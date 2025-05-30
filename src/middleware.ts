@@ -22,7 +22,8 @@ export async function middleware(request: NextRequest) {
 
     // Kiểm tra quyền truy cập
     const roles = token.user?.roles || [];
-    const hasPermission = checkPermission(request.nextUrl.pathname, roles);
+    const userDepartmentRoles = token.user?.userDepartmentRoles || [];
+    const hasPermission = checkPermission(request.nextUrl.pathname, roles, userDepartmentRoles);
 
     if (!hasPermission) {
         return NextResponse.redirect(new URL('/unauthorized', request.url));

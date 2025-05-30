@@ -6,6 +6,7 @@ export const EVENT_STATUS_COLORS: Record<EventStatus, string> = {
     ONGOING: 'success',
     COMPLETED: 'default',
     CANCELLED: 'error',
+    BLOCKED: 'error',
 };
 
 export const AUDIENCE_COLORS: Record<string, string> = {
@@ -17,4 +18,5 @@ export const AUDIENCE_COLORS: Record<string, string> = {
 export const MODE_COLORS: Record<string, string> = {
     ONLINE: 'green',
     OFFLINE: 'orange',
+    HYBRID: 'red',
 }; 

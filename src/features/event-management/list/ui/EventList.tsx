@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, Typography, Row, Col, Button, Tag, Space, Table, Select, Dropdown, Pagination, Segmented } from 'antd';
+import { Card, Typography, Row, Col, Button, Tag, Space, Table, Select, Dropdown, Pagination, Segmented, List } from 'antd';
 
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth/model/useAuth';
@@ -34,7 +34,31 @@ const EVENT_STATUS_OPTIONS = [
     { label: 'Draft', value: 'DRAFT' },
     { label: 'Canceled', value: 'CANCELED' },
     { label: 'Deleted', value: 'DELETED' },
+    { label: 'Blocked', value: 'BLOCKED' },
 ];
+
+const SEGMENT_GROUP_1 = [
+    { label: 'Published', value: 'PUBLISHED' },
+    { label: 'Closed', value: 'CLOSED' },
+    { label: 'Completed', value: 'COMPLETED' },
+    { label: 'Draft', value: 'DRAFT' },
+];
+const SEGMENT_GROUP_2 = [
+    { label: 'Canceled', value: 'CANCELED' },
+    { label: 'Deleted', value: 'DELETED' },
+    { label: 'Blocked', value: 'BLOCKED' },
+];
+
+function useIsMobile(breakpoint = 800) {
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+        const onResize = () => setIsMobile(window.innerWidth < breakpoint);
+        onResize();
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, [breakpoint]);
+    return isMobile;
+}
 
 export function EventList({ userDepartmentRoles }: EventListProps) {
     const router = useRouter();
@@ -46,6 +70,12 @@ export function EventList({ userDepartmentRoles }: EventListProps) {
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 2;
     const [selectedStatus, setSelectedStatus] = useState<string>('PUBLISHED');
+    const isMobile = useIsMobile();
+
+    // Reset page when status changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [selectedStatus]);
 
     // Set initial department when component mounts
     useEffect(() => {
@@ -91,41 +121,43 @@ export function EventList({ userDepartmentRoles }: EventListProps) {
     const pagedEvents = filteredEvents.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     return (
-        <div>
-            <Row justify="space-between" align="middle"
-                style={{ marginBottom: 12, border: '1px solid rgba(223, 148, 69, 0.73)', padding: '10px', borderRadius: '8px' }}>
-                <Col flex="1" >
-                    <SearchInput
-                        value={search}
-                        onChange={setSearch}
-                        style={{ width: 250 }}
-                        placeholder="Tìm kiếm sự kiện"
-                    />
-                </Col>
-                <Col flex="1" style={{ display: 'flex', justifyContent: 'center', padding: '0 10px' }}>
-                    <Segmented
-                        className={styles.customSegmented}
-                        options={EVENT_STATUS_OPTIONS}
-                        value={selectedStatus}
-                        onChange={setSelectedStatus}
-                        style={{
-                            width: 600,
-                            height: 31.99,
-                            background: '#fff',
-                            borderRadius: 6,
-                            border: '1px solid #e0e0e0',
-                            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
-                            fontWeight: 600,
-                        }}
-                        block
-                    />
-                </Col>
-                <Col>
-                    <Space>
+        <div >
+            {!isMobile ? (
+                <Row
+                    justify="space-between"
+                    align="middle"
+                    style={{ flexWrap: 'wrap', rowGap: 8, height: 'auto', marginBottom: 16 }}
+                >
+                    <Col style={{ minWidth: 220, maxWidth: 240, flex: 1 }}>
+                        <SearchInput
+                            value={search}
+                            onChange={setSearch}
+                            style={{ width: '100%', height: 40, boxShadow: '0 1px 4px rgba(0, 0, 0, 0.15)' }}
+                            placeholder="Tìm kiếm sự kiện"
+                        />
+                    </Col>
+                    <Col style={{ minWidth: 500, flex: 6, display: 'flex', justifyContent: 'center' }}>
+                        <Segmented
+                            className={styles.customSegmented}
+                            options={EVENT_STATUS_OPTIONS}
+                            value={selectedStatus}
+                            size="large"
+                            onChange={setSelectedStatus}
+                            style={{
+                                width: '100%',
+                                maxWidth: 710,
+                                background: '#fff',
+                                border: '1px solid #e0e0e0',
+                                boxShadow: '0 1px 4px rgba(0, 0, 0, 0.15)',
+                            }}
+                            block
+                        />
+                    </Col>
+                    <Col style={{ minWidth: 180, flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
                         <Select
                             value={selectedDepartment}
                             onChange={handleDepartmentChange}
-                            style={{ width: 180 }}
+                            style={{ width: '100%', maxWidth: 175, height: 40, boxShadow: '0 1px 4px rgba(0, 0, 0, 0.15)' }}
                             placeholder="Select Department"
                         >
                             {userDepartmentRoles.map((dept) => (
@@ -134,38 +166,89 @@ export function EventList({ userDepartmentRoles }: EventListProps) {
                                 </Option>
                             ))}
                         </Select>
-                        <Button
-                            type="primary"
-                            onClick={() => router.push('/organizer/create')}
-                        >
-                            Create Event
-                        </Button>
-                    </Space>
-                </Col>
-            </Row>
+                    </Col>
+                </Row>
+            ) : (
+                <>
+                    <Row
+                        justify="space-between"
+                        align="middle"
+                        style={{ marginBottom: 8, flexWrap: 'nowrap' }}
+                    >
+                        <Col style={{ flex: 1, minWidth: 120 }}>
+                            <SearchInput
+                                value={search}
+                                onChange={setSearch}
+                                style={{ width: '100%', height: 40, boxShadow: '0 1px 4px rgba(0, 0, 0, 0.15)' }}
+                                placeholder="Tìm kiếm sự kiện"
+                            />
+                        </Col>
+                        <Col style={{ flex: 1, minWidth: 120, display: 'flex', justifyContent: 'flex-end' }}>
+                            <Select
+                                value={selectedDepartment}
+                                onChange={handleDepartmentChange}
+                                style={{ width: '100%', maxWidth: 175, height: 40, boxShadow: '0 1px 4px rgba(0, 0, 0, 0.15)' }}
+                                placeholder="Select Department"
+                            >
+                                {userDepartmentRoles.map((dept) => (
+                                    <Option key={dept.departmentCode} value={dept.departmentCode}>
+                                        {dept.departmentName}
+                                    </Option>
+                                ))}
+                            </Select>
+                        </Col>
+                    </Row>
+                    <Row style={{ marginBottom: 16 }}>
+                        <Col span={24} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <Segmented
+                                className={styles.customSegmented}
+                                options={SEGMENT_GROUP_1}
+                                value={selectedStatus}
+                                onChange={setSelectedStatus}
+                                style={{ width: '100%', maxWidth: 400, marginBottom: 8 }}
+                                block
+                            />
+                            <Segmented
+                                className={styles.customSegmented}
+                                options={SEGMENT_GROUP_2}
+                                value={selectedStatus}
+                                onChange={setSelectedStatus}
+                                style={{ width: '100%', maxWidth: 400 }}
+                                block
+                            />
+                        </Col>
+                    </Row>
+                </>
+            )}
 
+            <List
+                itemLayout="vertical"
+                size="large"
+                dataSource={pagedEvents}
+                renderItem={(event: Event) => (
+                    <List.Item key={event.id} style={{ padding: 0, border: 'none' }}>
+                        <EventCard
+                            event={event}
+                            onOverview={() => router.push(`/organizer/events/${event.id}`)}
+                            onMembers={() => router.push(`/organizer/events/${event.id}/members`)}
+                            onEdit={() => router.push(`/organizer/events/${selectedDepartment}/${event.id}/update`)}
+                            onSurvey={() => router.push(`/organizer/events/${event.id}/survey`)}
+                        />
+                    </List.Item>
+                )}
+            />
 
-
-            {pagedEvents.map(event => (
-                <EventCard
-                    key={event.id}
-                    event={event}
-                    onOverview={() => router.push(`/organizer/events/${event.id}`)}
-                    onMembers={() => router.push(`/organizer/events/${event.id}/members`)}
-                    onEdit={() => router.push(`/organizer/events/${event.id}/edit`)}
-                    onSurvey={() => router.push(`/organizer/events/${event.id}/survey`)}
-                />
-            ))}
-
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
-                <Pagination
-                    current={currentPage}
-                    pageSize={pageSize}
-                    total={filteredEvents.length}
-                    onChange={setCurrentPage}
-                    showSizeChanger={false}
-                />
-            </div>
+            {filteredEvents.length > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
+                    <Pagination
+                        current={currentPage}
+                        pageSize={pageSize}
+                        total={filteredEvents.length}
+                        onChange={setCurrentPage}
+                        showSizeChanger={false}
+                    />
+                </div>
+            )}
         </div>
     );
 } 

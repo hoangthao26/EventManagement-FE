@@ -16,6 +16,8 @@ export const SearchInput: React.FC<SearchInputProps> = ({ value, onChange, place
             value={value}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
             style={style}
+            size="large"
+            enterButton
         />
     );
 }; 

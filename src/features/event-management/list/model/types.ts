@@ -1,5 +1,5 @@
-export type EventStatus = 'DRAFT' | 'PUBLISHED' | 'ONGOING' | 'COMPLETED' | 'CANCELLED';
-export type EventMode = 'ONLINE' | 'OFFLINE';
+export type EventStatus = 'DRAFT' | 'PUBLISHED' | 'ONGOING' | 'COMPLETED' | 'CANCELLED' | 'BLOCKED';
+export type EventMode = 'ONLINE' | 'OFFLINE' | 'HYBRID';
 export type EventAudience = 'STUDENT' | 'LECTURER' | 'BOTH';
 
 export interface Event {

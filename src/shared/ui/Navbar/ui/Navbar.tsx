@@ -93,12 +93,13 @@ export const Navbar: React.FC<NavbarProps> = ({ showSearch = false, onSearch }) 
                                 Registered Event
                             </Button>
                         )}
-                        {isLecturer && isHead && (
-                            <Button type="primary" onClick={() => router.push('/organizer/create')}>
-                                Create Event
-                            </Button>
-                        )}
+
                     </>
+                )}
+                {isLecturer && isHead && (
+                    <Button size="large" type="primary" onClick={() => router.push('/organizer/create')}>
+                        Create Event
+                    </Button>
                 )}
                 <Dropdown
                     menu={{ items: profileItems }}
