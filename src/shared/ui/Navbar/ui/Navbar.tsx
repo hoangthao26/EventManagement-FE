@@ -56,32 +56,6 @@ export const Navbar: React.FC<NavbarProps> = ({ showSearch = false, onSearch }) 
         },
     ];
 
-    const notificationItems = [
-        {
-            key: 'notification1',
-            label: 'New event created',
-            onClick: () => { },
-        },
-        {
-            key: 'notification2',
-            label: 'Event updated',
-            onClick: () => { },
-        },
-        {
-            key: 'notification3',
-            label: 'Event reminder',
-            onClick: () => { },
-        },
-        {
-            type: 'divider',
-        },
-        {
-            key: 'viewAll',
-            label: 'View all notifications',
-            onClick: () => router.push('/notifications'),
-        },
-    ];
-
     return (
         <Header
             style={{
@@ -94,7 +68,8 @@ export const Navbar: React.FC<NavbarProps> = ({ showSearch = false, onSearch }) 
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                boxShadow: '0 1px 4px rgba(0,21,41,.08)',
+                boxShadow: '0 4px 14px rgba(0,21,41,0.15)',
+                borderBottom: '2px solid rgb(221, 221, 221)',
             }}
         >
             <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>

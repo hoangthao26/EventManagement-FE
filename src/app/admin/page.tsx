@@ -95,7 +95,7 @@ export default function AdminDashboardPage() {
             {
                 data: [30, 25, 15, 20, 10, 15, 20, 25],
                 backgroundColor: [
-                   '#ff4d4f', // Seminar
+                    '#ff4d4f', // Seminar
                     '#ffa940', // Workshop
                     '#52c41a', // Conference
                     '#1890ff', // Webinar
@@ -138,20 +138,20 @@ export default function AdminDashboardPage() {
 
     return (
         <DashboardLayout>
-            
-               
-                    <AntTitle level={2}>Admin Dashboard</AntTitle>
 
-                {/* Thống kê tổng quan */}
-                <Row gutter={[16, 16]} className="mb-6" style={{ marginBottom: '20px' }}>
-                    <Col xs={24} sm={12} md={6}>
-                        <Card style={{ height: '100%' }}>
-                            <Statistic
-                                title="Total Users"
-                                value={stats.totalUsers}
-                                prefix={<TeamOutlined />}
-                            />
-                            <div style={{ marginTop: '10px' }}>
+
+            <AntTitle level={2}>Admin Dashboard</AntTitle>
+
+            {/* Thống kê tổng quan */}
+            <Row gutter={[16, 16]} className="mb-6" style={{ marginBottom: '20px' }}>
+                <Col xs={24} sm={12} md={6}>
+                    <Card style={{ height: '100%' }}>
+                        <Statistic
+                            title="Total Users"
+                            value={stats.totalUsers}
+                            prefix={<TeamOutlined />}
+                        />
+                        <div style={{ marginTop: '10px' }}>
                             <Statistic
                                 title="Total Students"
                                 value={stats.totalStudents}
@@ -164,97 +164,97 @@ export default function AdminDashboardPage() {
                                 prefix={<UserOutlined />}
                                 valueStyle={{ fontSize: 16 }}
                             />
+                        </div>
+                    </Card>
+                </Col>
+                <Col md={18}>
+                    <Row gutter={[16, 16]}>
+                        <Col xs={24} sm={12} md={8}>
+                            <Card>
+                                <Statistic
+                                    title="Total Events"
+                                    value={stats.totalEvents}
+                                    prefix={<CalendarOutlined />}
+                                />
+                            </Card>
+                        </Col>
+
+                        <Col xs={24} sm={12} md={8}>
+                            <Card>
+                                <Statistic
+                                    title="Active Events"
+                                    value={stats.activeEvents}
+                                    prefix={<PlayCircleOutlined />}
+                                />
+                            </Card>
+
+                        </Col>
+                        <Col xs={24} sm={12} md={8}>
+                            <Card>
+                                <Statistic
+                                    title="Upcoming Events"
+                                    value={stats.upcomingEvents}
+                                    prefix={<ScheduleOutlined />}
+                                />
+                            </Card>
+                        </Col>
+                    </Row>
+                    <Row gutter={[16, 16]} className="mb-6" justify="center" style={{ marginTop: '10px' }}>
+                        <Col xs={24} sm={12} md={8}>
+                            <Card>
+                                <Statistic
+                                    title="Total Registrations"
+                                    value={stats.totalRegistrations}
+                                    prefix={<TeamOutlined />}
+                                />
+                            </Card>
+                        </Col>
+                        <Col xs={24} sm={12} md={8}>
+                            <Card>
+                                <Statistic
+                                    title="Participation Rate"
+                                    value={stats.participationRate}
+                                    prefix={<RiseOutlined />}
+                                    suffix="%"
+                                />
+                            </Card>
+                        </Col>
+                    </Row>
+                </Col>
+            </Row>
+
+            {/* Biểu đồ và thống kê chi tiết */}
+            <Row gutter={[16, 16]} className="mb-6">
+                <Col xs={24}>
+                    <Card
+                        title={
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <span>Event Statistics by Year</span>
+                                <Select
+                                    value={selectedYear}
+                                    style={{ width: 100 }}
+                                    onChange={setSelectedYear}
+                                    options={yearOptions}
+                                />
                             </div>
-                        </Card>
-                    </Col>
-                    <Col md={18}>
+                        }
+                    >
                         <Row gutter={[16, 16]}>
-                            <Col xs={24} sm={12} md={8}>
-                                <Card>
-                                    <Statistic
-                                        title="Total Events"
-                                        value={stats.totalEvents}
-                                        prefix={<CalendarOutlined />}
-                                    />
-                                </Card>
+                            <Col xs={24} lg={15}>
+                                <Line data={registrationChartData} />
                             </Col>
-
-                            <Col xs={24} sm={12} md={8}>
-                                <Card>
-                                    <Statistic
-                                        title="Active Events"
-                                        value={stats.activeEvents}
-                                        prefix={<PlayCircleOutlined />}
-                                    />
-                                </Card>
-
+                            <Col xs={24} lg={1}>
+                                <Divider type="vertical" style={{ height: '100%' }} />
                             </Col>
-                            <Col xs={24} sm={12} md={8}>
-                                <Card>
-                                    <Statistic
-                                        title="Upcoming Events"
-                                        value={stats.upcomingEvents}
-                                        prefix={<ScheduleOutlined />}
-                                    />
-                                </Card>
+                            <Col xs={24} lg={8}>
+                                <Pie data={eventTypeChartData} />
                             </Col>
                         </Row>
-                        <Row gutter={[16, 16]} className="mb-6" justify="center" style={{ marginTop: '10px' }}>
-                            <Col xs={24} sm={12} md={8}>
-                                <Card>
-                                    <Statistic
-                                        title="Total Registrations"
-                                        value={stats.totalRegistrations}
-                                        prefix={<TeamOutlined />}
-                                    />
-                                </Card>
-                            </Col>
-                            <Col xs={24} sm={12} md={8}>
-                                <Card>
-                                    <Statistic
-                                        title="Participation Rate"
-                                        value={stats.participationRate}
-                                        prefix={<RiseOutlined />}
-                                        suffix="%"
-                                    />
-                                </Card>
-                            </Col>
-                        </Row>
-                    </Col>
-                </Row>
+                    </Card>
+                </Col>
+            </Row>
 
-                {/* Biểu đồ và thống kê chi tiết */}
-                <Row gutter={[16, 16]} className="mb-6">
-                    <Col xs={24}>
-                        <Card
-                            title={
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                    <span>Event Statistics by Year</span>
-                                    <Select
-                                        value={selectedYear}
-                                        style={{ width: 100 }}
-                                        onChange={setSelectedYear}
-                                        options={yearOptions}
-                                    />
-                                </div>
-                            }
-                        >
-                            <Row gutter={[16, 16]}>
-                                <Col xs={24} lg={15}>
-                                    <Line data={registrationChartData} />
-                                </Col>
-                                <Col xs={24} lg={1}>
-                                    <Divider type="vertical" style={{ height: '100%' }} />
-                                </Col>
-                                <Col xs={24} lg={8}>
-                                    <Pie data={eventTypeChartData} />
-                                </Col>
-                            </Row>
-                        </Card>
-                    </Col>
-                </Row>
 
-            
         </DashboardLayout>
     );
 }
