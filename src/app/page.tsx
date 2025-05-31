@@ -50,39 +50,6 @@ export default function HomePage() {
         <EventCarousel />
       </div>
       
-      {/* Events section */}
-      <div style={{ width: '100%', margin: 0, padding: '64px 50px 0' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', width: '100%' }}>
-          <Title level={2}>Upcoming Events</Title>
-          <Row gutter={[16, 16]}>
-            {events.map((event) => (
-              <Col xs={24} sm={12} md={8} lg={6} key={event.id}>
-                <Card
-                  hoverable
-                  title={event.title}
-                  onClick={() => router.push(`/${event.id}`)}
-                >
-                  <Paragraph>{event.description}</Paragraph>
-                  <p>Date: {event.date}</p>
-                  <p>Location: {event.location}</p>
-                  <p>Capacity: {event.registered}/{event.capacity}</p>
-                  <Button
-                    type="primary"
-                    block
-                    onClick={(e: React.MouseEvent) => {
-                      e.stopPropagation();
-                      router.push(`/${event.id}`);
-                    }}
-                  >
-                    View Details
-                  </Button>
-                </Card>
-              </Col>
-            ))}
-          </Row>
-        </div>
-      </div>
-
       {/* Statistics section - let the component handle its own container */}
       <StatisticsSection />
 

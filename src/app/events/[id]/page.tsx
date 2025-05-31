@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import Loading from '@/shared/ui/Loading';
 import { useAuth } from '@/features/auth/model/useAuth';
 import { useApi } from '@/lib/useApi';
-import HomeLayout from "@/widgets/layouts/ui/HomeLayout"; // Add this import
+import HomeLayout from "@/widgets/layouts/ui/HomeLayout";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -56,18 +56,30 @@ interface EventDetail {
     registrationStatus: string | null;
 }
 
-export default function EventDetailPage({ params }: { params: { id: string } }) {
+export default function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
     const { session, status } = useAuth();
     const { apiCall, loading: apiLoading } = useApi();
     const [event, setEvent] = useState<EventDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [registering, setRegistering] = useState(false);
+    const [eventId, setEventId] = useState<string | null>(null);
 
     useEffect(() => {
+        const getParams = async () => {
+            const resolvedParams = await params;
+            setEventId(resolvedParams.id);
+        };
+        
+        getParams();
+    }, [params]);
+
+    useEffect(() => {
+        if (!eventId) return;
+
         const fetchEventDetail = async () => {
             try {
-                const data = await apiCall<EventDetail>(`/events/${params.id}`);
+                const data = await apiCall<EventDetail>(`/events/${eventId}`);
                 setEvent(data);
             } catch (error) {
                 notification.error({
@@ -80,17 +92,14 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
         };
 
         fetchEventDetail();
-    }, [params.id, apiCall]);
+    }, [eventId, apiCall]);
 
     const handleRegister = async () => {
-        if (!session) {
-            router.push('/login');
-            return;
-        }
-
+        if (!eventId) return;
+        
         setRegistering(true);
         try {
-            await apiCall(`/events/${params.id}/register`, {
+            await apiCall(`/events/${eventId}/register`, {
                 method: 'POST',
             });
             
@@ -99,7 +108,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
                 description: 'Successfully registered for the event',
             });
             
-            const data = await apiCall<EventDetail>(`/events/${params.id}`);
+            const data = await apiCall<EventDetail>(`/events/${eventId}`);
             setEvent(data);
         } catch (error) {
             notification.error({
@@ -111,7 +120,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
         }
     };
 
-    if (loading) {
+    if (loading || !eventId) {
         return <Loading />;
     }
 
@@ -189,9 +198,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
                             <Space size={[0, 8]} wrap>
                                 <Tag color="blue">{event.typeName}</Tag>
                                 <Tag color="green">{event.mode}</Tag>
-                                {event.tags.map(tag => (
-                                    <Tag key={tag.id}>{tag.name}</Tag>
-                                ))}
+                                
                             </Space>
                         </div>
                     </div>
@@ -205,25 +212,6 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
                                 <Title level={3}>About the Event</Title>
                                 <Paragraph>{event.description}</Paragraph>
                             </Card>
-
-                            {event.images.length > 0 && (
-                                <Card className="mb-6">
-                                    <Title level={3}>Event Images</Title>
-                                    <Image.PreviewGroup>
-                                        <Row gutter={[16, 16]}>
-                                            {event.images.map(image => (
-                                                <Col span={8} key={image.id}>
-                                                    <Image
-                                                        src={image.url}
-                                                        alt="Event"
-                                                        style={{ objectFit: 'cover', borderRadius: '8px' }}
-                                                    />
-                                                </Col>
-                                            ))}
-                                        </Row>
-                                    </Image.PreviewGroup>
-                                </Card>
-                            )}
                         </Col>
 
                         {/* Sidebar */}
@@ -296,13 +284,6 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
                                                 : 'closed'}
                                         </Text>
                                     )}
-                                </Space>
-                            </Card>
-
-                            <Card>
-                                <Title level={5}>Share Event</Title>
-                                <Space>
-                                    <Button icon={<ShareAltOutlined />}>Share</Button>
                                 </Space>
                             </Card>
                         </Col>

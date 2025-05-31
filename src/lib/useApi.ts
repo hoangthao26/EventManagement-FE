@@ -27,7 +27,7 @@ export function useApi() {
             // If session exists, add authorization header
             if (session) {
                 // For JWT-based auth
-                headers.set("Authorization", `Bearer ${session.user.id}`);
+                headers.set("Authorization", `Bearer ${session?.accessToken}`);
 
                 // You might also want to add role for role-based backend verification
                 // headers.set("X-User-Role", session.user.role || "");

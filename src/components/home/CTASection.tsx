@@ -1,22 +1,51 @@
-import React from 'react';
+"use client";
+
+import React, { useEffect, useState } from 'react';
 import { Row, Col, Typography, Button, Card, Space } from 'antd';
 import { CheckCircleOutlined, CalendarOutlined } from '@ant-design/icons';
 import Link from 'next/link';
+import { useApi } from '@/lib/useApi';
+import { format, parseISO } from 'date-fns';
 
 const { Title, Text, Paragraph } = Typography;
 
+interface Event {
+    id: number;
+    name: string;
+    locationAddress: string;
+    startTime: string;
+}
+
 const CTASection: React.FC = () => {
+  const { apiCall } = useApi();
+  const [upcomingEvent, setUpcomingEvent] = useState<Event | null>(null);
+
+  useEffect(() => {
+    const fetchUpcomingEvent = async () => {
+      try {
+        const events = await apiCall<Event[]>('/events');
+        if (events && events.length > 0) {
+          setUpcomingEvent(events[0]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch upcoming event:', error);
+      }
+    };
+
+    fetchUpcomingEvent();
+  }, [apiCall]);
+
   return (
     <div style={{ 
       background: 'linear-gradient(to right, #ff8533, #ff6b00)',
       width: '100%',
-      margin: '0', // Add this
-      padding: '64px 50px', // Match the container padding
+      margin: '0',
+      padding: '64px 50px',
     }}>
       <div style={{ 
         maxWidth: 1200, 
         margin: '0 auto',
-        width: '100%' // Add this
+        width: '100%' 
       }}>
         <Row gutter={[48, 48]} align="middle">
           <Col xs={24} lg={12}>
@@ -54,20 +83,23 @@ const CTASection: React.FC = () => {
               </div>
               
               <Space direction="vertical" style={{ width: '100%' }} size="middle">
-                {[
-                  {
-                    date: '25/09/2025',
-                    title: 'Workshop: Digital Marketing Trends',
-                    location: 'Phòng Workshop, ĐH FPT'
-                  },
-                  // ... other events
-                ].map((event, index) => (
-                  <Card key={index} size="small">
-                    <Text type="secondary" style={{ fontSize: 12 }}>{event.date}</Text>
-                    <Paragraph strong style={{ margin: '4px 0' }}>{event.title}</Paragraph>
-                    <Text type="secondary">{event.location}</Text>
+                {upcomingEvent ? (
+                  <Card size="small">
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      {format(parseISO(upcomingEvent.startTime), 'dd/MM/yyyy')}
+                    </Text>
+                    <Paragraph strong style={{ margin: '4px 0' }}>
+                      {upcomingEvent.name}
+                    </Paragraph>
+                    <Text type="secondary">
+                      {upcomingEvent.locationAddress}
+                    </Text>
                   </Card>
-                ))}
+                ) : (
+                  <Card size="small">
+                    <Text type="secondary">Không có sự kiện sắp tới</Text>
+                  </Card>
+                )}
               </Space>
               
               <Link href="/events" style={{ display: 'block', marginTop: 24 }}>
