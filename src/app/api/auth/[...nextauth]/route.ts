@@ -34,7 +34,6 @@ const handler = NextAuth({
                     console.log('Google idToken:', {
                         idToken: account.id_token,
                     });
-
                     // Send id_token to backend for verification
                     const response = await authAxiosInstance.post(
                         '/auth/google',
@@ -81,7 +80,7 @@ const handler = NextAuth({
             }
             return false;
         },
-        async jwt({ token, account }) {
+        async jwt({ token, account, profile }) {
             if (account) {
                 token.accessToken = account.access_token;
                 token.refreshToken = account.refresh_token;
@@ -92,6 +91,13 @@ const handler = NextAuth({
                     image?: string;
                     roles?: UserRole[];
                     userDepartmentRoles?: any[];
+                };
+            }
+            // Đảm bảo luôn có image từ Google profile nếu chưa có
+            if (profile && (!token.user?.image || token.user.image === '')) {
+                token.user = {
+                    ...token.user,
+                    image: (profile as any)?.picture,
                 };
             }
             return token;

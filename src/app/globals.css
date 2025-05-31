@@ -28,4 +28,5 @@ body :where(.ant-upload.ant-upload-drag) .anticon-inbox,
 body :where(.ant-upload.ant-upload-drag):hover .anticon-inbox,
 body :where(.ant-upload.ant-upload-drag.ant-upload-drag-hover) .anticon-inbox {
   color: #fa8c16 !important;
+  padding: 8px;
 }
