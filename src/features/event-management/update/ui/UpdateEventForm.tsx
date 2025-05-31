@@ -9,6 +9,7 @@ import { EventDetailsResponse, UpdateEventPayload } from '../model/types';
 import { Spin } from 'antd';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
+import Loading from '@/shared/ui/Loading';
 dayjs.extend(utc);
 
 interface UpdateEventFormProps {
@@ -46,6 +47,18 @@ export function UpdateEventForm({ departmentCode, eventId, departments }: Update
             const payload = { ...data };
             delete payload.departmentCode;
 
+            // Get current event data to compare images
+            const currentEvent = await getEventDetails(departmentCode, eventId);
+
+            // If imageUrls is empty array, it means user wants to delete all images
+            if (payload.imageUrls && payload.imageUrls.length === 0) {
+                payload.imageUrls = [];
+            } else {
+                // Use the new imageUrls from the form which contains both kept and new images
+                // The form component should handle keeping existing images and adding new ones
+                payload.imageUrls = payload.imageUrls || [];
+            }
+
             console.log('Update event payload:', payload);
             await updateEvent(departmentCode, eventId, payload);
             showSuccess('Event updated successfully!');
@@ -60,9 +73,7 @@ export function UpdateEventForm({ departmentCode, eventId, departments }: Update
 
     if (loading) {
         return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-                <Spin size="large" />
-            </div>
+            <Loading />
         );
     }
 

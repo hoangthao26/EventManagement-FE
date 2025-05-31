@@ -2,6 +2,7 @@
 
 import { UpdateEventForm } from '@/features/event-management/update/ui/UpdateEventForm';
 import { useParams } from 'next/navigation';
+import DashboardLayout from '@/widgets/layouts/ui/DashboardLayout';
 
 export default function UpdateEventPage() {
     const params = useParams();
@@ -9,10 +10,14 @@ export default function UpdateEventPage() {
     const eventId = parseInt(params.eventId as string);
 
     return (
-        <UpdateEventForm
-            departmentCode={departmentCode}
-            eventId={eventId}
-            departments={[{ departmentCode, departmentName: departmentCode }]} // Pass current department
-        />
+        <DashboardLayout>
+            <div style={{ padding: '16px' }}>
+                <UpdateEventForm
+                    departmentCode={departmentCode}
+                    eventId={eventId}
+                    departments={[{ departmentCode, departmentName: departmentCode }]} // Pass current department
+                />
+            </div>
+        </DashboardLayout>
     );
 } 

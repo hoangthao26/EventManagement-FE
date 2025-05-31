@@ -40,7 +40,7 @@ export default function CreateEventPage() {
 
     return (
         <DashboardLayout>
-            <div style={{ padding: '0px 24px 24px 24px' }}>
+            <div style={{ padding: '16px' }}>
                 <CreateEventForm
                     onSubmit={handleSubmit}
                     loading={loading}

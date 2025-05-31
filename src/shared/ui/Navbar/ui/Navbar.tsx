@@ -97,7 +97,11 @@ export const Navbar: React.FC<NavbarProps> = ({ showSearch = false, onSearch }) 
                     </>
                 )}
                 {isLecturer && isHead && (
-                    <Button size="large" type="primary" onClick={() => router.push('/organizer/create')}>
+                    <Button size="large" type="primary" onClick={() => router.push('/organizer/create')}
+                        style={{
+                            border: '1px solid #e0e0e0',
+                            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.22)'
+                        }}>
                         Create Event
                     </Button>
                 )}
@@ -109,12 +113,12 @@ export const Navbar: React.FC<NavbarProps> = ({ showSearch = false, onSearch }) 
                 >
                     <div style={{ marginLeft: 12, cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                         <Avatar
-                            size="small"
+
                             icon={<UserOutlined />}
                             src={session?.user?.image}
                             style={{ marginRight: 8 }}
                         />
-                        <span>{session?.user?.name}</span>
+                        <span style={{ fontSize: "16px" }}>{session?.user?.name}</span>
                     </div>
                 </Dropdown>
             </div>

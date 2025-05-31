@@ -136,7 +136,7 @@ export function EventList({ userDepartmentRoles }: EventListProps) {
                             placeholder="Tìm kiếm sự kiện"
                         />
                     </Col>
-                    <Col style={{ minWidth: 500, flex: 6, display: 'flex', justifyContent: 'center' }}>
+                    <Col style={{ minWidth: 500, flex: 6, display: 'flex', justifyContent: 'center', borderRadius: '8px' }}>
                         <Segmented
                             className={styles.customSegmented}
                             options={EVENT_STATUS_OPTIONS}

@@ -1,11 +1,12 @@
 import React from 'react';
 import styles from '../styles/event-card.module.css';
 import { Button, Tooltip, Tag } from 'antd';
-import { DashboardOutlined, TeamOutlined, EditOutlined, FormOutlined, ClockCircleOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { ClockCircleOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { Event } from '../model/types';
 import { AUDIENCE_COLORS, MODE_COLORS } from '../lib/constants';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
+import { MdBarChart, MdPeople, MdEdit, MdAssignment } from 'react-icons/md';
 
 dayjs.extend(utc);
 
@@ -39,23 +40,25 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onOverview, onMembe
                         <ClockCircleOutlined style={{ marginRight: 7, color: 'black' }} />
                         {start.format('hh:mm A, ddd, DD/MM/YYYY')}
                     </div>
-                    <div className={styles.location}>
-                        <EnvironmentOutlined style={{ marginRight: 6 }} />
-                        {event.locationAddress}
-                    </div>
+                    {event.mode !== 'ONLINE' && (
+                        <div className={styles.location}>
+                            <EnvironmentOutlined style={{ marginRight: 6 }} />
+                            {event.locationAddress}
+                        </div>
+                    )}
                 </div>
                 <div className={styles.actions}>
                     <Tooltip title="Tổng quan">
-                        <Button icon={<DashboardOutlined />} className={styles.actionBtn} onClick={onOverview} />
+                        <Button icon={<MdBarChart size={20} />} className={styles.actionBtn} onClick={onOverview} />
                     </Tooltip>
                     <Tooltip title="Thành viên">
-                        <Button icon={<TeamOutlined />} className={styles.actionBtn} onClick={onMembers} />
+                        <Button icon={<MdPeople size={20} />} className={styles.actionBtn} onClick={onMembers} />
                     </Tooltip>
                     <Tooltip title="Chỉnh sửa">
-                        <Button icon={<EditOutlined />} className={styles.actionBtn} onClick={onEdit} />
+                        <Button icon={<MdEdit size={20} />} className={styles.actionBtn} onClick={onEdit} />
                     </Tooltip>
                     <Tooltip title="Khảo sát">
-                        <Button icon={<FormOutlined />} className={styles.actionBtn} onClick={onSurvey} />
+                        <Button icon={<MdAssignment size={20} />} className={styles.actionBtn} onClick={onSurvey} />
                     </Tooltip>
                 </div>
             </div>

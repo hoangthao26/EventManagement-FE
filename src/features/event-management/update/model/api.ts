@@ -7,5 +7,8 @@ export const getEventDetails = async (departmentCode: string, eventId: number): 
 };
 
 export const updateEvent = async (departmentCode: string, eventId: number, payload: UpdateEventPayload): Promise<void> => {
+    console.log('Update Event Request Details:');
+    console.log('URL:', `/events/management/${departmentCode}/event/${eventId}`);
+    console.log('Payload:', JSON.stringify(payload, null, 2));
     await axiosInstance.put(`/events/management/${departmentCode}/event/${eventId}`, payload);
 }; 
