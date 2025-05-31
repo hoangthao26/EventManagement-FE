@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getSession } from 'next-auth/react';
 
 const axiosInstance = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -10,10 +11,10 @@ const axiosInstance = axios.create({
 
 // Request interceptor
 axiosInstance.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('accessToken');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+    async (config) => {
+        const session = await getSession();
+        if (session?.accessToken) {
+            config.headers.Authorization = `Bearer ${session.accessToken}`;
         }
         return config;
     },
@@ -28,12 +29,15 @@ axiosInstance.interceptors.response.use(
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
             try {
-                const refreshToken = localStorage.getItem('refreshToken');
-                const response = await axiosInstance.post('/auth/refresh', { refreshToken });
-                const { accessToken } = response.data;
-                localStorage.setItem('accessToken', accessToken);
-                originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-                return axiosInstance(originalRequest);
+                const session = await getSession();
+                if (session?.refreshToken) {
+                    const response = await axiosInstance.post('/auth/refresh', {
+                        refreshToken: session.refreshToken
+                    });
+                    const { accessToken } = response.data;
+                    originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+                    return axiosInstance(originalRequest);
+                }
             } catch (error) {
                 // Handle refresh token error
                 return Promise.reject(error);

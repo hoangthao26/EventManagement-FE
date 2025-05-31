@@ -1,0 +1,6 @@
+.customSegmented :global(.ant-segmented-item-selected) {
+    background: #ff9800;
+    color: #fff;
+    font-weight: 600;
+    transition: background 0.2s;
+}
