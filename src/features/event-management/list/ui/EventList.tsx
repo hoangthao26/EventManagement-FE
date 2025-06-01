@@ -33,7 +33,6 @@ const EVENT_STATUS_OPTIONS = [
     { label: 'Completed', value: 'COMPLETED' },
     { label: 'Draft', value: 'DRAFT' },
     { label: 'Canceled', value: 'CANCELED' },
-    { label: 'Deleted', value: 'DELETED' },
     { label: 'Blocked', value: 'BLOCKED' },
 ];
 
@@ -41,12 +40,12 @@ const SEGMENT_GROUP_1 = [
     { label: 'Published', value: 'PUBLISHED' },
     { label: 'Closed', value: 'CLOSED' },
     { label: 'Completed', value: 'COMPLETED' },
-    { label: 'Draft', value: 'DRAFT' },
+
 ];
 const SEGMENT_GROUP_2 = [
     { label: 'Canceled', value: 'CANCELED' },
-    { label: 'Deleted', value: 'DELETED' },
     { label: 'Blocked', value: 'BLOCKED' },
+    { label: 'Draft', value: 'DRAFT' },
 ];
 
 function useIsMobile(breakpoint = 800) {

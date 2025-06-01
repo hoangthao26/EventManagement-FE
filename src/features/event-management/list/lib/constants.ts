@@ -3,10 +3,10 @@ import { EventStatus } from '../model/types';
 export const EVENT_STATUS_COLORS: Record<EventStatus, string> = {
     DRAFT: 'default',
     PUBLISHED: 'processing',
-    ONGOING: 'success',
-    COMPLETED: 'default',
+    COMPLETED: 'success',
+    CLOSED: 'error',
     CANCELLED: 'error',
-    BLOCKED: 'error',
+    BLOCKED: 'warning',
 };
 
 export const AUDIENCE_COLORS: Record<string, string> = {

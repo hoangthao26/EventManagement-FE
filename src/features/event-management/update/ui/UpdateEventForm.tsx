@@ -10,6 +10,7 @@ import { Spin } from 'antd';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import Loading from '@/shared/ui/Loading';
+import { EventStatusUpdate } from './EventStatusUpdate';
 dayjs.extend(utc);
 
 interface UpdateEventFormProps {
@@ -81,6 +82,8 @@ export function UpdateEventForm({ departmentCode, eventId, departments }: Update
         return null;
     }
 
+    const isFormDisabled = !['DRAFT', 'BLOCKED'].includes(eventData.status);
+
     // Transform event data to match form initial values
     const initialValues = {
         name: eventData.name,
@@ -105,12 +108,27 @@ export function UpdateEventForm({ departmentCode, eventId, departments }: Update
     };
 
     return (
-        <CreateEventForm
-            onSubmit={handleSubmit}
-            loading={submitting}
-            departments={departments}
-            initialValues={initialValues}
-            isUpdate={true}
-        />
+        <div>
+            <div style={{ marginBottom: 24 }}>
+                <h3 style={{ fontWeight: 'bold' }}>Event Status</h3>
+                <EventStatusUpdate
+                    departmentCode={departmentCode}
+                    eventId={eventId}
+                    currentStatus={eventData.status}
+                    onStatusChange={(newStatus) => {
+                        setEventData(prev => prev ? { ...prev, status: newStatus } : null);
+                    }}
+                />
+            </div>
+            <CreateEventForm
+                onSubmit={handleSubmit}
+                loading={submitting}
+                departments={departments}
+                initialValues={initialValues}
+                isUpdate={true}
+                disabled={isFormDisabled}
+                statusMessage={isFormDisabled ? 'Event can only be updated when status is DRAFT or BLOCKED' : undefined}
+            />
+        </div>
     );
 }

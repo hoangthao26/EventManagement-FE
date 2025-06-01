@@ -1,4 +1,4 @@
-export type EventStatus = 'DRAFT' | 'PUBLISHED' | 'ONGOING' | 'COMPLETED' | 'CANCELLED' | 'BLOCKED';
+export type EventStatus = 'DRAFT' | 'PUBLISHED' | 'COMPLETED' | 'CANCELLED' | 'BLOCKED' | 'CLOSED';
 export type EventMode = 'ONLINE' | 'OFFLINE' | 'HYBRID';
 export type EventAudience = 'STUDENT' | 'LECTURER' | 'BOTH';
 

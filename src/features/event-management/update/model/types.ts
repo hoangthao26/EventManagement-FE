@@ -1,3 +1,5 @@
+import { EventStatus } from '../../list/model/types';
+
 export interface EventDetailsResponse {
     id: number;
     name: string;
@@ -32,6 +34,7 @@ export interface EventDetailsResponse {
     endTime: string;
     registrationStart: string;
     registrationEnd: string;
+    status: EventStatus;
 }
 
 export interface UpdateEventPayload {

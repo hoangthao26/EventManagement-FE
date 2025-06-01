@@ -19,6 +19,8 @@ interface CreateEventFormProps {
     departments: { departmentName: string; departmentCode: string }[];
     initialValues?: any;
     isUpdate?: boolean;
+    disabled?: boolean;
+    statusMessage?: string;
 }
 
 type ImageType = 'banner' | 'poster';
@@ -85,7 +87,7 @@ const getBase64 = (file: File): Promise<string> =>
         reader.onerror = (error) => reject(error);
     });
 
-export function CreateEventForm({ onSubmit, loading, departments, initialValues, isUpdate }: CreateEventFormProps) {
+export function CreateEventForm({ onSubmit, loading, departments, initialValues, isUpdate, disabled, statusMessage }: CreateEventFormProps) {
     const [form] = Form.useForm();
     const editorRef = useRef<any>(null);
     const router = useRouter();
@@ -263,6 +265,7 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
                 isOnline: false,
                 audience: 'STUDENT',
             }}
+            disabled={disabled}
         >
             <div style={{ fontWeight: 'bold', color: '#222', marginBottom: 8 }}>
                 Upload images
@@ -528,11 +531,17 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
                     }}
                 />
             </Form.Item>
+            {statusMessage && (
+                <div style={{ textAlign: 'center', color: '#ff4d4f', marginBottom: 8 }}>
+                    {statusMessage}
+                </div>
+            )}
             <Form.Item>
                 <Button type="primary" htmlType="submit" loading={loading || submitting} block>
                     {isUpdate ? 'Update Event' : 'Create Event'}
                 </Button>
             </Form.Item>
+
         </Form >
     );
 } 
