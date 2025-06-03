@@ -2,6 +2,9 @@
 
 import { useEffect } from "react";
 import { useAuth } from "@/features/auth/model/useAuth";
+import CTASection from "@/components/home/CTASection";
+import EventCarousel from "@/components/home/EventCarousel";
+import StatisticsSection from "@/components/home/StatisticsSection";
 import HomeLayout from "@/widgets/layouts/ui/HomeLayout";
 import Loading from "@/shared/ui/Loading";
 import { Card, Typography, Row, Col, Button } from "antd";
@@ -9,22 +12,24 @@ import { useRouter } from "next/navigation";
 
 const { Title, Paragraph } = Typography;
 
-//  Home page (danh sách events)
 export default function HomePage() {
+  // DEVELOPMENT BYPASS - Remove auth checks
   const { session, status } = useAuth();
   const router = useRouter();
 
+  // Remove auth effect
   useEffect(() => {
-    if (status === "unauthenticated") {
-      window.location.href = "/login";
-    }
+      if (status === "unauthenticated") {
+          window.location.href = "/login";
+      }
   }, [status]);
 
+  // Remove loading check
   if (status === "loading") {
-    return <Loading />;
+      return <Loading />;
   }
 
-  // Mock data - sẽ thay thế bằng API call thực tế
+  // Mock data
   const events = [
     {
       id: 1,
@@ -35,40 +40,21 @@ export default function HomePage() {
       capacity: 50,
       registered: 30
     },
-    // Thêm các events khác...
+    // Add more mock events as needed
   ];
 
   return (
     <HomeLayout>
-      <div className="container mx-auto p-4">
-        <Title level={2}>Upcoming Events</Title>
-        <Row gutter={[16, 16]}>
-          {events.map((event) => (
-            <Col xs={24} sm={12} md={8} lg={6} key={event.id}>
-              <Card
-                hoverable
-                title={event.title}
-                onClick={() => router.push(`/${event.id}`)}
-              >
-                <Paragraph>{event.description}</Paragraph>
-                <p>Date: {event.date}</p>
-                <p>Location: {event.location}</p>
-                <p>Capacity: {event.registered}/{event.capacity}</p>
-                <Button
-                  type="primary"
-                  block
-                  onClick={(e: React.MouseEvent) => {
-                    e.stopPropagation();
-                    router.push(`/${event.id}`);
-                  }}
-                >
-                  View Details
-                </Button>
-              </Card>
-            </Col>
-          ))}
-        </Row>
+      {/* Carousel section - full width */}
+      <div style={{ width: '100%', margin: 0, padding: 0 }}>
+        <EventCarousel />
       </div>
+      
+      {/* Statistics section - let the component handle its own container */}
+      <StatisticsSection />
+
+      {/* CTA section - let the component handle its own container */}
+      <CTASection />
     </HomeLayout>
   );
 }
