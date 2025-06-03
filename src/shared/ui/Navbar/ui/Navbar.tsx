@@ -3,7 +3,7 @@
 import React from 'react';
 import { Layout, Menu, Avatar, Dropdown, Badge, Typography, Input, Space, Button, Row, Col } from 'antd';
 import {
-    UserOutlined, LogoutOutlined, BellOutlined, 
+    UserOutlined, LogoutOutlined, BellOutlined,
     SettingOutlined, SearchOutlined, CalendarOutlined,
     FacebookOutlined, InstagramOutlined, YoutubeOutlined,
     MailOutlined, PhoneOutlined, EnvironmentOutlined
@@ -84,100 +84,102 @@ export const Navbar: React.FC<NavbarProps> = ({ showSearch = false, onSearch, ch
     ];
 
     const menuItems = [
-        { 
-            key: '/events', 
+        {
+            key: '/events',
             label: 'Events',
             onClick: () => router.push('/events')
         },
-        { 
-            key: '/departments', 
+        {
+            key: '/departments',
             label: 'Departments',
             onClick: () => router.push('/departments')
         },
-        { 
-            key: '/about', 
+        {
+            key: '/about',
             label: 'About Us',
             onClick: () => router.push('/about')
         },
     ];
 
     return (
-            <Header style={{
-                padding: '0 50px',
-                width: '100%',
-                background: '#fff',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                position: 'sticky',
-                top: 0,
-                zIndex: 1000,
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '48px' }}>
-                    {/* Logo */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ background: '#ff8533', borderRadius: '8px', padding: '6px', height: '40px', width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <CalendarOutlined style={{ color: 'white', fontSize: '20px' }} />
-                        </div>
-                        <h1
-                            style={{
-                                margin: 0,
-                                cursor: 'pointer',
-                                fontSize: '20px',
-                                fontWeight: 'bold'
-                            }}
-                            onClick={() => router.push('/')}
-                        >
-                            FPT<span style={{ color: '#ff8533' }}>Events</span>
-                        </h1>
+        <Header style={{
+            padding: '0 50px',
+            width: '100%',
+            background: '#fff',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            position: 'sticky',
+            top: 0,
+
+            zIndex: 1000,
+        }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '48px' }}>
+                {/* Logo */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ background: '#ff8533', borderRadius: '8px', padding: '6px', height: '40px', width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <CalendarOutlined style={{ color: 'white', fontSize: '20px' }} />
                     </div>
-
-                    {/* Navigation Menu */}
-                    <Menu
-                        mode="horizontal"
-                        selectedKeys={[pathname]}
-                        items={menuItems}
-                        style={{ 
-                            border: 'none',
-                            minWidth: '300px', // Add minimum width
-                            flex: 'none',     // Remove flex to prevent shrinking
+                    <h1
+                        style={{
+                            margin: 0,
+                            cursor: 'pointer',
+                            fontSize: '20px',
+                            fontWeight: 'bold'
                         }}
-                    />
+                        onClick={() => router.push('/')}
+                    >
+                        FPT<span style={{ color: '#ff8533' }}>Events</span>
+                    </h1>
 
-                    {/* Search */}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                    {pathname === '/' && (
-                        <>
-                            {(isStudent || isLecturer) && (
-                                <Button type="default" onClick={() => router.push('/registered-events')}>
-                                    Registered Events
-                                </Button>
-                            )}
-                            {isLecturer && isHead && (
-                                <Button type="primary" onClick={() => router.push('/organizer/create')}>
-                                    Create Event
-                                </Button>
-                            )}
-                        </>
-                    )}
+                {/* Navigation Menu */}
+                <Menu
+                    mode="horizontal"
+                    selectedKeys={[pathname]}
+                    items={menuItems}
+                    style={{
+                        border: 'none',
+                        minWidth: '300px', // Add minimum width
+                        flex: 'none',     // Remove flex to prevent shrinking
+                    }}
+                />
 
-                    {/* Notifications */}
-                    {/* Profile */}
-                    <Dropdown menu={{ items: profileItems }} placement="bottomRight" arrow trigger={['click']}>
-                        <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Avatar
-                                size="small"
-                                icon={<UserOutlined />}
-                                src={session?.user?.image}
-                                style={{ marginRight: 8 }}
-                            />
-                            <span>{session?.user?.name}</span>
-                        </div>
-                    </Dropdown>
-                </div>
-            </Header>
+                {/* Search */}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                {pathname === '/' && (
+                    <>
+                        {(isStudent || isLecturer) && (
+                            <Button type="default" onClick={() => router.push('/registered-events')}>
+                                Registered Events
+                            </Button>
+                        )}
+                        {isLecturer && isHead && (
+                            <Button type="primary" onClick={() => router.push('/organizer/create')}>
+                                Create Event
+                            </Button>
+                        )}
+                    </>
+                )}
+
+                {/* Notifications */}
+                {/* Profile */}
+                <Dropdown menu={{ items: profileItems }} placement="bottomRight" arrow trigger={['click']}>
+                    <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Avatar
+                            size="small"
+                            icon={<UserOutlined />}
+                            src={session?.user?.image}
+                            style={{ marginRight: 8 }}
+                        />
+                        <span>{session?.user?.name}</span>
+                    </div>
+                </Dropdown>
+            </div>
+        </Header>
     );
 };

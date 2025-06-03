@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Form, Input, DatePicker, Select, InputNumber, Button, Card, Row, Col, Radio, Typography, Upload } from 'antd';
+import { Form, Input, DatePicker, Select, InputNumber, Button, Card, Row, Col, Radio, Typography, Upload, Image } from 'antd';
 import { ImageUpload } from './ImageUpload';
 import { EVENT_TYPES } from '../lib/constants';
 import { Editor } from '@tinymce/tinymce-react';
@@ -10,12 +10,17 @@ import { fetchEventTypes, fetchActiveTags } from '../api';
 import styles from '../styles/ImageUpload.module.css';
 import { useRouter } from 'next/navigation';
 import { useAntdMessage } from '@/shared/lib/hooks/useAntdMessage';
+import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
 const { Title } = Typography;
 
 interface CreateEventFormProps {
     onSubmit: (data: any) => void;
     loading?: boolean;
     departments: { departmentName: string; departmentCode: string }[];
+    initialValues?: any;
+    isUpdate?: boolean;
+    disabled?: boolean;
+    statusMessage?: string;
 }
 
 type ImageType = 'banner' | 'poster';
@@ -74,30 +79,71 @@ const deleteFailedUploads = async (deleteTokens: string[]) => {
     }
 };
 
-export function CreateEventForm({ onSubmit, loading, departments }: CreateEventFormProps) {
+const getBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = (error) => reject(error);
+    });
+
+export function CreateEventForm({ onSubmit, loading, departments, initialValues, isUpdate, disabled, statusMessage }: CreateEventFormProps) {
     const [form] = Form.useForm();
     const editorRef = useRef<any>(null);
     const router = useRouter();
     const { showSuccess, showError } = useAntdMessage();
-    const [isOnline, setIsOnline] = useState(false);
+    const [eventMode, setEventMode] = useState<'OFFLINE' | 'ONLINE' | 'HYBRID'>(initialValues?.mode || 'OFFLINE');
     const [submitting, setSubmitting] = useState(false);
     const [eventTypes, setEventTypes] = useState([]);
     const [tags, setTags] = useState([]);
     const [imageFiles, setImageFiles] = useState<File[]>([]);
-    const [audience, setAudience] = useState('STUDENT');
-    const [imageList, setImageList] = useState<any[]>([]);
+    const [audience, setAudience] = useState(initialValues?.audience || 'STUDENT');
+    const [imageList, setImageList] = useState<any[]>(initialValues?.imageUrls?.map((url: string, index: number) => ({
+        uid: `${url}-${index}`,
+        name: url.split('/').pop(),
+        status: 'done',
+        url: url
+    })) || []);
+    const [editorValue, setEditorValue] = useState(String(initialValues?.description ?? ''));
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [previewImage, setPreviewImage] = useState('');
 
     useEffect(() => {
         fetchEventTypes().then(setEventTypes);
         fetchActiveTags().then(setTags);
     }, []);
 
+    // Set initial values when they change
+    useEffect(() => {
+        if (initialValues) {
+            form.setFieldsValue(initialValues);
+            if (editorRef.current && !editorRef.current.getContent()) {
+                editorRef.current.setContent(initialValues.description);
+            }
+        }
+    }, [initialValues, form]);
+
+    useEffect(() => {
+        if (initialValues?.description !== undefined) {
+            setEditorValue(String(initialValues.description ?? ''));
+        }
+    }, [initialValues?.description]);
+
     const handleImageChange = (files: File[]) => {
         setImageFiles(files);
     };
 
-    const handleImageWallChange = ({ fileList }: { fileList: any[] }) => {
+    const handleImageWallChange: UploadProps['onChange'] = ({ fileList }) => {
         setImageList(fileList);
+    };
+
+    const handlePreview = async (file: UploadFile) => {
+        if (!file.url && !file.preview) {
+            file.preview = await getBase64(file.originFileObj as File);
+        }
+
+        setPreviewImage(file.url || (file.preview as string));
+        setPreviewOpen(true);
     };
 
     const handleSubmit = async (values: any) => {
@@ -107,7 +153,7 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
             const eventName = values.name;
 
             // Lấy nội dung từ TinyMCE Editor
-            const description = editorRef.current ? editorRef.current.getContent() : '';
+            const description = editorValue;
 
             // Upload poster
             let posterUrl = values.poster;
@@ -142,6 +188,9 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
                     const data = await response.json();
                     if (data.secure_url) imageUrls.push(data.secure_url);
                     if (data.delete_token) uploadedDeleteTokens.push(data.delete_token);
+                } else if (imageList[i].url) {
+                    // Ảnh cũ, giữ lại url
+                    imageUrls.push(imageList[i].url);
                 }
             }
 
@@ -164,7 +213,7 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
 
             // Build platform
             let platform = undefined;
-            if (isOnline) {
+            if (eventMode !== 'OFFLINE') {
                 platform = {
                     name: values.platformName,
                     url: values.platformUrl,
@@ -174,16 +223,16 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
             // Build payload đúng chuẩn backend
             const payload = {
                 name: values.name,
-                description, // Sử dụng nội dung từ TinyMCE Editor
+                description,
                 typeId: values.typeId,
                 audience: values.audience,
                 posterUrl,
                 bannerUrl,
-                mode: isOnline ? 'ONLINE' : 'OFFLINE',
-                location,
+                mode: eventMode,
+                location: eventMode !== 'ONLINE' ? location : undefined,
                 maxCapacity: (values.studentCapacity || 0) + (values.lecturerCapacity || 0),
                 roleCapacities,
-                platform: isOnline ? { name: values.platformName, url: values.platformUrl } : undefined,
+                platform: eventMode !== 'OFFLINE' ? { name: values.platformName, url: values.platformUrl } : undefined,
                 tags: values.tags,
                 imageUrls,
                 startTime: values.timeRange[0].toISOString(),
@@ -194,8 +243,6 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
 
             // Gọi API tạo event
             await onSubmit({ ...payload, departmentCode: values.departmentCode });
-            // Hiển thị thông báo thành công
-            showSuccess('Event created successfully!');
             // Chuyển hướng sang trang organizer/my-events sau khi tạo thành công
             router.push('/organizer/my-events');
         } catch (err) {
@@ -214,10 +261,11 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
             form={form}
             layout="vertical"
             onFinish={handleSubmit}
-            initialValues={{
+            initialValues={initialValues || {
                 isOnline: false,
                 audience: 'STUDENT',
             }}
+            disabled={disabled}
         >
             <div style={{ fontWeight: 'bold', color: '#222', marginBottom: 8 }}>
                 Upload images
@@ -253,16 +301,18 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
                     </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
-                    <Form.Item
-                        label={<b>Department</b>}
-                        name="departmentCode"
-                        rules={[{ required: true, message: 'Please select department' }]}
-                    >
-                        <Select
-                            options={departments.map(dep => ({ label: dep.departmentName, value: dep.departmentCode }))}
-                            placeholder="Select department"
-                        />
-                    </Form.Item>
+                    {!isUpdate && (
+                        <Form.Item
+                            label={<b>Department</b>}
+                            name="departmentCode"
+                            rules={[{ required: true, message: 'Please select department' }]}
+                        >
+                            <Select
+                                options={departments.map(dep => ({ label: dep.departmentName, value: dep.departmentCode }))}
+                                placeholder="Select department"
+                            />
+                        </Form.Item>
+                    )}
                 </Col>
             </Row>
             <Row gutter={16}>
@@ -273,7 +323,6 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
                         rules={[{ required: true, message: 'Please select event type' }]}
                     >
                         <Select
-
                             options={eventTypes.map((t: any) => ({ label: t.name, value: t.id }))}
                             placeholder="Select event type"
                         />
@@ -343,79 +392,76 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
 
 
 
-            <Form.Item label={<b>Mode</b>} name="mode" initialValue={isOnline ? 'ONLINE' : 'OFFLINE'}>
-                <Radio.Group onChange={(e: any) => setIsOnline(e.target.value === 'ONLINE')}>
+            <Form.Item label={<b>Mode</b>} name="mode" initialValue={eventMode}>
+                <Radio.Group onChange={(e: { target: { value: 'OFFLINE' | 'ONLINE' | 'HYBRID' } }) => setEventMode(e.target.value)}>
                     <Radio value="OFFLINE">Offline</Radio>
                     <Radio value="ONLINE">Online</Radio>
+                    <Radio value="HYBRID">Hybrid</Radio>
                 </Radio.Group>
             </Form.Item>
 
-            {
-                !isOnline && (
-                    <Row gutter={16}>
-                        <Col xs={24} md={6}>
-                            <Form.Item
-                                label="Address"
-                                name="address"
-                                rules={[{ required: true, message: 'Please enter address' }]}
-                            >
-                                <Input placeholder="Address" />
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} md={6}>
-                            <Form.Item
-                                label="Ward"
-                                name="ward"
-                                rules={[{ required: true, message: 'Please enter ward' }]}
-                            >
-                                <Input placeholder="Ward" />
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} md={6}>
-                            <Form.Item
-                                label="District"
-                                name="district"
-                                rules={[{ required: true, message: 'Please enter district' }]}
-                            >
-                                <Input placeholder="District" />
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} md={6}>
-                            <Form.Item
-                                label="City"
-                                name="city"
-                                rules={[{ required: true, message: 'Please enter city' }]}
-                            >
-                                <Input placeholder="City" />
-                            </Form.Item>
-                        </Col>
-                    </Row>
-                )
-            }
-            {
-                isOnline && (
-                    <Row gutter={16}>
-                        <Col xs={24} md={12}>
-                            <Form.Item
-                                label="Platform name"
-                                name="platformName"
-                                rules={[{ required: true, message: 'Please enter platform name' }]}
-                            >
-                                <Input placeholder="Platform name" />
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} md={12}>
-                            <Form.Item
-                                label="Platform URL"
-                                name="platformUrl"
-                                rules={[{ required: true, message: 'Please enter platform URL' }]}
-                            >
-                                <Input placeholder="Platform URL" />
-                            </Form.Item>
-                        </Col>
-                    </Row>
-                )
-            }
+            {(eventMode === 'OFFLINE' || eventMode === 'HYBRID') && (
+                <Row gutter={16}>
+                    <Col xs={24} md={6}>
+                        <Form.Item
+                            label="Address"
+                            name="address"
+                            rules={[{ required: true, message: 'Please enter address' }]}
+                        >
+                            <Input placeholder="Address" />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} md={6}>
+                        <Form.Item
+                            label="Ward"
+                            name="ward"
+                            rules={[{ required: true, message: 'Please enter ward' }]}
+                        >
+                            <Input placeholder="Ward" />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} md={6}>
+                        <Form.Item
+                            label="District"
+                            name="district"
+                            rules={[{ required: true, message: 'Please enter district' }]}
+                        >
+                            <Input placeholder="District" />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} md={6}>
+                        <Form.Item
+                            label="City"
+                            name="city"
+                            rules={[{ required: true, message: 'Please enter city' }]}
+                        >
+                            <Input placeholder="City" />
+                        </Form.Item>
+                    </Col>
+                </Row>
+            )}
+            {(eventMode === 'ONLINE' || eventMode === 'HYBRID') && (
+                <Row gutter={16}>
+                    <Col xs={24} md={12}>
+                        <Form.Item
+                            label="Platform name"
+                            name="platformName"
+                            rules={[{ required: true, message: 'Please enter platform name' }]}
+                        >
+                            <Input placeholder="Platform name" />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                        <Form.Item
+                            label="Platform URL"
+                            name="platformUrl"
+                            rules={[{ required: true, message: 'Please enter platform URL' }]}
+                        >
+                            <Input placeholder="Platform URL" />
+                        </Form.Item>
+                    </Col>
+                </Row>
+            )}
 
             <Row gutter={16}>
                 <Col xs={24} md={12}>
@@ -443,20 +489,32 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
                     listType="picture-card"
                     fileList={imageList}
                     onChange={handleImageWallChange}
+                    onPreview={handlePreview}
                     beforeUpload={() => false}
                     multiple
                 >
-                    {imageList.length < 8 && '+ Upload'}
+                    {imageList.length < 20 && '+ Upload'}
                 </Upload>
             </Form.Item>
+            {previewImage && (
+                <Image
+                    wrapperStyle={{ display: 'none' }}
+                    preview={{
+                        visible: previewOpen,
+                        onVisibleChange: (visible: boolean) => setPreviewOpen(visible),
+                        afterOpenChange: (visible: boolean) => !visible && setPreviewImage(''),
+                    }}
+                    src={previewImage}
+                />
+            )}
             <Form.Item
                 label={<b>Description</b>}
-                name="description"
                 rules={[{ required: true, message: 'Please enter event description' }]}
             >
                 <Editor
                     apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY}
-                    onInit={(_evt, editor) => editorRef.current = editor}
+                    value={editorValue}
+                    onEditorChange={val => setEditorValue(String(val ?? ''))}
                     init={{
                         height: 300,
                         menubar: false,
@@ -473,11 +531,17 @@ export function CreateEventForm({ onSubmit, loading, departments }: CreateEventF
                     }}
                 />
             </Form.Item>
+            {statusMessage && (
+                <div style={{ textAlign: 'center', color: '#ff4d4f', marginBottom: 8 }}>
+                    {statusMessage}
+                </div>
+            )}
             <Form.Item>
                 <Button type="primary" htmlType="submit" loading={loading || submitting} block>
-                    Create Event
+                    {isUpdate ? 'Update Event' : 'Create Event'}
                 </Button>
             </Form.Item>
+
         </Form >
     );
 } 

@@ -24,11 +24,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Navbar/>
 
                 <Content style={{
-                    margin: '20px 72px',
-                    padding: 24,
+                    padding: '0 24px',
                     background: colorBgContainer,
                     borderRadius: borderRadiusLG,
-                    minHeight: 280,
+                    minHeight: 280
                 }}>
                     {children}
                 </Content>

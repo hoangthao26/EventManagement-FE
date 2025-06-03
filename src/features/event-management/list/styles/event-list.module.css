@@ -1,6 +1,18 @@
 .customSegmented :global(.ant-segmented-item-selected) {
     background: #ff9800;
     color: #fff;
-    font-weight: 600;
+    font-weight: 400;
     transition: background 0.2s;
+}
+
+.customSegmented {
+    display: flex;
+    align-items: center;
+}
+
+.customSegmented :global(.ant-segmented-item) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
 }
