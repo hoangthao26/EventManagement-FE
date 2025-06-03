@@ -21,7 +21,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <Sider collapsed={collapsed} />
 
             <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'all 0.2s' }}>
-                <Navbar showSearch={false} />
+                <Navbar/>
 
                 <Content style={{
                     padding: '0 24px',
