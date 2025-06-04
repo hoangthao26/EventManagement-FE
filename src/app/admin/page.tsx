@@ -27,6 +27,7 @@ import {
 } from 'chart.js';
 import { Line, Bar, Pie } from 'react-chartjs-2';
 import moment from 'moment';
+import axios from 'axios';
 
 const { Title: AntTitle } = Typography;
 
@@ -43,66 +44,142 @@ ChartJS.register(
     ArcElement
 );
 
+interface MonthlyRegistration {
+    month: number;
+    count: number;
+}
+
+interface EventTypeDistribution {
+    seminar: number;
+    workshop: number;
+}
+
 export default function AdminDashboardPage() {
     const { session, status } = useAuth();
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+    const [stats, setStats] = useState({
+        totalUsers: 0,
+        totalStudents: 0,
+        totalLecturers: 0,
+        totalEvents: 0,
+        activeEvents: 0,
+        upcomingEvents: 0,
+        totalRegistrations: 0,
+        participationRate: 0
+    });
+    const [registrationData, setRegistrationData] = useState<MonthlyRegistration[]>([]);
+    const [eventTypeData, setEventTypeData] = useState<Record<string, number>>({});
+    const [loading, setLoading] = useState(true);
     const currentYear = new Date().getFullYear();
     const yearOptions = [];
     for (let year = 2015; year <= currentYear; year++) {
         yearOptions.push({ value: year, label: year.toString() });
     }
-    if (status === "loading") {
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/stats`, {
+                    headers: {
+                        Authorization: `Bearer ${session?.accessToken}`
+                    }
+                });
+                setStats(response.data);
+            } catch (error) {
+                console.error('Failed to fetch stats:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (session?.accessToken) {
+            fetchStats();
+        }
+    }, [session]);
+
+    useEffect(() => {
+        const fetchRegistrationData = async () => {
+            try {
+                const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/events-by-month?year=${selectedYear}`, {
+                    headers: {
+                        Authorization: `Bearer ${session?.accessToken}`
+                    }
+                });
+                setRegistrationData(response.data);
+            } catch (error) {
+                console.error('Failed to fetch registration data:', error);
+            }
+        };
+
+        if (session?.accessToken) {
+            fetchRegistrationData();
+        }
+    }, [session, selectedYear]);
+
+    useEffect(() => {
+        const fetchEventTypeData = async () => {
+            try {
+                const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/event-types-distribution?year=${selectedYear}`, {
+                    headers: {
+                        Authorization: `Bearer ${session?.accessToken}`
+                    }
+                });
+                setEventTypeData(response.data);
+            } catch (error) {
+                console.error('Failed to fetch event type distribution:', error);
+            }
+        };
+
+        if (session?.accessToken) {
+            fetchEventTypeData();
+        }
+    }, [session, selectedYear]);
+
+    if (status === "loading" || loading) {
         return <Loading />;
     }
 
-    // Mock data - sẽ thay thế bằng API call thực tế
-    const stats = {
-        totalUsers: 1280,
-        totalStudents: 1200,
-        totalLecturers: 80,
-        totalEvents: 45,
-        activeEvents: 12,
-        upcomingEvents: 8,
-        totalRegistrations: 850,
-        participationRate: 78,
-    };
-
-    // Mock data cho biểu đồ đăng ký sự kiện theo thời gian
     const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const registrationChartData = {
         labels: labels,
         datasets: [
             {
                 label: 'Event Registrations',
-                data: [65, 78, 90, 85, 95, 110, 120, 130, 140, 150, 160, 170],
+                data: labels.map((_, index) => {
+                    const monthData = registrationData.find(item => item.month === index + 1);
+                    return monthData ? monthData.count : 0;
+                }),
                 borderColor: '#1890ff',
                 tension: 0.1,
             },
         ],
     };
 
-    // Mock data cho biểu đồ phân bố sự kiện theo loại
+    const chartOptions = {
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        }
+    };
+
     const eventTypeChartData = {
-        labels: ['Seminar',
-            'Workshop',
-            'Conference',
-            'Webinar',
-            'Orientation',
-            'Guest Lecture',
-            'Networking Event',
-            'Career Fair'],
+        labels: Object.keys(eventTypeData || {}),
         datasets: [
             {
-                data: [30, 25, 15, 20, 10, 15, 20, 25],
+                data: Object.values(eventTypeData || {}),
                 backgroundColor: [
-                    '#ff4d4f', // Seminar
-                    '#ffa940', // Workshop
-                    '#52c41a', // Conference
-                    '#1890ff', // Webinar
-                    '#722ed1', // Orientation
-                    '#13c2c2', // Guest Lecture
-                    '#eb2f96', // Networking Event
-                    '#0050b3', // Career Fair
+                    '#ff4d4f', // Red
+                    '#ffa940', // Orange
+                    '#52c41a', // Green
+                    '#1890ff', // Blue
+                    '#722ed1', // Purple
+                    '#13c2c2', // Cyan
+                    '#eb2f96', // Pink
+                    '#0050b3', // Dark Blue
                 ],
                 borderColor: 'rgba(0,0,0,0)',
             },
@@ -213,7 +290,7 @@ export default function AdminDashboardPage() {
                             <Card>
                                 <Statistic
                                     title="Participation Rate"
-                                    value={stats.participationRate}
+                                    value={Number(stats.participationRate).toFixed(2)}
                                     prefix={<RiseOutlined />}
                                     suffix="%"
                                 />
@@ -241,7 +318,7 @@ export default function AdminDashboardPage() {
                     >
                         <Row gutter={[16, 16]}>
                             <Col xs={24} lg={15}>
-                                <Line data={registrationChartData} />
+                                <Line data={registrationChartData} options={chartOptions} />
                             </Col>
                             <Col xs={24} lg={1}>
                                 <Divider type="vertical" style={{ height: '100%' }} />

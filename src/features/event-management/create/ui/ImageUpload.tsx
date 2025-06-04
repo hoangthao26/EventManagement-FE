@@ -9,7 +9,7 @@ import styles from '../styles/ImageUpload.module.css';
 import { useAntdMessage } from '@/shared/lib/hooks/useAntdMessage';
 
 interface ImageUploadProps {
-    type: 'POSTER' | 'BANNER';
+    type: 'POSTER' | 'BANNER' | 'AVATAR';
     value?: File | string;
     onChange?: (file: File | null) => void;
     children?: React.ReactNode;
@@ -133,7 +133,7 @@ export function ImageUpload({ type, value, onChange, children, height = 400 }: I
                     {children || (
                         <>
                             <span style={{ color: '#fa8c16', fontSize: '14px', marginBottom: 4 }}>
-                                {type === 'BANNER' ? 'Upload Banner Image' : 'Upload Poster Image'}
+                                {type === 'BANNER' ? 'Upload Banner Image' : type === 'AVATAR' ? 'Upload Avatar Image' : 'Upload Poster Image'}
                             </span>
                             <span style={{ color: '#8c8c8c', fontSize: '14px' }}>
                                 {IMAGE_DIMENSIONS[type].label}
