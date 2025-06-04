@@ -151,19 +151,15 @@ export const Navbar: React.FC<NavbarProps> = ({ showSearch = false, onSearch, ch
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                {pathname === '/' && (
-                    <>
-                        {(isStudent || isLecturer) && (
-                            <Button type="default" onClick={() => router.push('/registered-events')}>
-                                Registered Events
-                            </Button>
-                        )}
-                        {isLecturer && isHead && (
-                            <Button type="primary" onClick={() => router.push('/organizer/create')}>
-                                Create Event
-                            </Button>
-                        )}
-                    </>
+                {pathname === '/' && (isStudent || isLecturer) && (
+                    <Button type="default" onClick={() => router.push('/registered-events')}>
+                        Registered Events
+                    </Button>
+                )}
+                {(pathname === '/' || pathname.startsWith('/organizer')) && isLecturer && isHead && (
+                    <Button type="primary" onClick={() => router.push('/organizer/create')}>
+                        Create Event
+                    </Button>
                 )}
 
                 {/* Notifications */}

@@ -120,7 +120,7 @@ const handler = NextAuth({
     },
     session: {
         strategy: "jwt",
-        maxAge: 2 * 24 * 60 * 60, // 2 days
+        maxAge: 7 * 24 * 60 * 60, // 7 days - phù hợp với thời gian của refreshToken
     },
     secret: process.env.NEXTAUTH_SECRET,
     debug: false,

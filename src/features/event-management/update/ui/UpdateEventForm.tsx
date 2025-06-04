@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAntdMessage } from '@/shared/lib/hooks/useAntdMessage';
 import { CreateEventForm } from '../../create/ui/CreateEventForm';
-import { getEventDetails, updateEvent } from '../model/api';
+import { getEventDetails, updateEvent, deleteEvent } from '../model/api';
 import { EventDetailsResponse, UpdateEventPayload } from '../model/types';
-import { Spin } from 'antd';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import Loading from '@/shared/ui/Loading';
 import { EventStatusUpdate } from './EventStatusUpdate';
+import { Button, Modal } from 'antd';
+
 dayjs.extend(utc);
 
 interface UpdateEventFormProps {
@@ -23,6 +24,7 @@ export function UpdateEventForm({ departmentCode, eventId, departments }: Update
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [eventData, setEventData] = useState<EventDetailsResponse | null>(null);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const router = useRouter();
     const { showSuccess, showError } = useAntdMessage();
 
@@ -72,6 +74,22 @@ export function UpdateEventForm({ departmentCode, eventId, departments }: Update
         }
     };
 
+    const handleDelete = async () => {
+        try {
+            await deleteEvent(departmentCode, eventId);
+            console.log('Event deleted:', { departmentCode, eventId });
+            showSuccess('Event deleted successfully');
+            setDeleteModalOpen(false);
+            router.push('/organizer/my-events');
+        } catch (e: any) {
+            setDeleteModalOpen(false);
+            if (e?.response?.status === 400) {
+                showError('Event cannot be deleted (not in DRAFT status)');
+            } else {
+                showError('Failed to delete event!');
+            }
+        }
+    };
     if (loading) {
         return (
             <Loading />
@@ -109,8 +127,7 @@ export function UpdateEventForm({ departmentCode, eventId, departments }: Update
 
     return (
         <div>
-            <div style={{ marginBottom: 24 }}>
-                <h3 style={{ fontWeight: 'bold' }}>Event Status</h3>
+            <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'space-between' }}>
                 <EventStatusUpdate
                     departmentCode={departmentCode}
                     eventId={eventId}
@@ -119,6 +136,24 @@ export function UpdateEventForm({ departmentCode, eventId, departments }: Update
                         setEventData(prev => prev ? { ...prev, status: newStatus } : null);
                     }}
                 />
+                {eventData.status === 'DRAFT' && (
+                    <>
+                        <Button danger onClick={() => setDeleteModalOpen(true)}>
+                            Delete
+                        </Button>
+                        <Modal
+                            open={deleteModalOpen}
+                            onOk={handleDelete}
+                            onCancel={() => setDeleteModalOpen(false)}
+                            okText="Delete"
+                            okButtonProps={{ danger: true }}
+                            cancelText="Cancel"
+                            title="Confirm Delete"
+                        >
+                            Are you sure you want to delete this event? This action cannot be undone.
+                        </Modal>
+                    </>
+                )}
             </div>
             <CreateEventForm
                 onSubmit={handleSubmit}
