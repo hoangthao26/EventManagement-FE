@@ -1,0 +1,75 @@
+.statusContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 8px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.currentStatus {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.label {
+    font-weight: 500;
+    color: #666;
+}
+
+.statusTag {
+    font-size: 14px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.editButton {
+    padding: 4px;
+    height: auto;
+    color: #666;
+}
+
+.editButton:hover {
+    color: #1890ff;
+    background-color: rgba(24, 144, 255, 0.1);
+}
+
+.statusOptions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.statusOptions .statusTag {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.statusOptions .statusTag:hover {
+    transform: scale(1.05);
+}
+
+.statusOptions .statusTag.selected {
+    transform: scale(1.1);
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.4);
+}
+
+.statusSelect {
+    width: 100% !important;
+}
+
+.statusSelect :global(.ant-select-selector) {
+    padding: 8px !important;
+    border-radius: 4px !important;
+}
+
+.statusSelect :global(.ant-select-selection-item) {
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+}

@@ -1,11 +1,24 @@
 .header {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
+    /* Cho phép xuống dòng khi thiếu chỗ */
     padding: 0 0 0 24px;
     position: relative;
-    border: 1.5px solid #bec0c4;
+    border: 1.5px solid rgba(190, 192, 196, 0.5);
     border-radius: 12px;
-    margin-top: 12px;
+    margin-top: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    background: rgba(14, 165, 233, 0.03);
+}
+
+.header:hover {
+    transform: translateY(-2px);
+    box-shadow: rgba(14, 165, 233, 0.1) 0px 4px 12px;
+    background: rgba(14, 165, 233, 0.05);
 }
 
 .image {
@@ -14,11 +27,14 @@
     aspect-ratio: 16/9;
     object-fit: cover;
     border-radius: 6px;
-    margin-right: 24px;
     background: #f5f5f5;
     flex-shrink: 0;
-    border: 1.5px solid #bec0c4;
+    border: 1.5px solid rgba(190, 192, 196, 0.5);
+    transition: all 0.3s ease;
+}
 
+.header:hover .image {
+    filter: brightness(0.95);
 }
 
 .info {
@@ -28,7 +44,6 @@
     justify-content: center;
     padding: 16px 0;
     padding-left: 16px;
-
 }
 
 .actions {
@@ -37,20 +52,19 @@
     align-items: center;
     justify-content: flex-start;
     gap: 8px;
-    min-width: 70px;
-
-    border-left: 1px solid #bec0c4;
+    min-width: 60px;
+    border-left: 1px solid rgba(190, 192, 196, 0.5);
     border-top-right-radius: 16px;
     border-bottom-right-radius: 16px;
-    padding: 16px 0;
+    padding: 8px 0;
     margin-left: 0;
     margin-top: 0;
     height: 100%;
+    background: rgba(255, 255, 255, 0.5);
 }
 
 .actionBtn {
     background: transparent;
-
     border: none;
     font-size: 1.3rem;
     transition: color 0.2s, background 0.2s;
@@ -71,7 +85,6 @@
     font-size: 1.3rem;
     font-weight: 600;
     display: flex;
-    margin-bottom: 4px;
 }
 
 .time {
@@ -86,10 +99,60 @@
     margin-bottom: 8px;
 }
 
-.custom-segmented .ant-segmented-item-selected {
-    background: #ff9800 !important;
-    /* Cam */
-    color: #fff !important;
-    font-weight: 600;
-    transition: background 0.2s;
+.tags {
+    display: flex;
+    gap: 6px;
+}
+
+@media (max-width: 700px) {
+    .header {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 0 0 0 0;
+    }
+
+    .info {
+        padding: 0 0 0 0;
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .image {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16/9;
+        object-fit: cover;
+        border-radius: 12px 12px 0 0;
+        background: #f5f5f5;
+        flex-shrink: 0;
+        border: none;
+        max-width: 100vw;
+        min-width: 0;
+        display: block;
+    }
+
+    .actions {
+        flex-direction: row;
+        border-left: none;
+        border-top: 1px solid #bec0c4;
+        border-radius: 0 0 12px 12px;
+        min-width: 0;
+        width: 100%;
+        justify-content: flex-end;
+        padding: 8px 8px;
+        height: auto;
+        margin-top: 0;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 1100px) {
+
+    .location,
+    .time,
+    .tags {
+        display: none;
+    }
 }

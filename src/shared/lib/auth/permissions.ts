@@ -4,18 +4,20 @@ type RoutePermissions = {
     [key: string]: UserRole[];
 };
 
-// Định nghĩa các route và role được phép truy cập
-export const routePermissions: RoutePermissions = {
+// Định nghĩa quyền truy cập cho từng route
+const routePermissions: RoutePermissions = {
     '/admin': ['ADMIN'],
-    '/organizer': ['LECTURER'],
-    '/my-events': ['STUDENT', 'LECTURER'],
-    '/checkin': ['LECTURER'],
-    '/events': ['STUDENT', 'LECTURER', 'ADMIN'],
+    '/organizer': ['LECTURER'], // Base permission - will be further checked for HEAD role
+    '/registered-events': ['STUDENT', 'LECTURER'],
+};
 
+// Kiểm tra xem user có phải là HEAD của bất kỳ department nào không
+export const isHeadOfAnyDepartment = (userDepartmentRoles: any[] = []) => {
+    return userDepartmentRoles.some(dept => dept.roleName === 'HEAD');
 };
 
 // Kiểm tra quyền truy cập
-export const checkPermission = (path: string, roles: UserRole[] = []) => {
+export const checkPermission = (path: string, roles: UserRole[] = [], userDepartmentRoles: any[] = []) => {
     // Tìm route pattern phù hợp
     const matchedRoute = Object.keys(routePermissions).find(route =>
         path.startsWith(route)
@@ -24,7 +26,14 @@ export const checkPermission = (path: string, roles: UserRole[] = []) => {
     if (!matchedRoute) return true; // Route không cần phân quyền
 
     const allowedRoles = routePermissions[matchedRoute];
-    return roles.some(role => allowedRoles.includes(role));
+    const hasBaseRole = roles.some(role => allowedRoles.includes(role));
+
+    // Đặc biệt xử lý route /organizer
+    if (matchedRoute === '/organizer') {
+        return hasBaseRole && isHeadOfAnyDepartment(userDepartmentRoles);
+    }
+
+    return hasBaseRole;
 };
 
 // Lấy route redirect dựa trên role
