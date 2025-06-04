@@ -220,7 +220,7 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
                 };
             }
 
-            // Build payload đúng chuẩn backend
+            // Build payload 
             const payload = {
                 name: values.name,
                 description,
@@ -261,9 +261,10 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
             form={form}
             layout="vertical"
             onFinish={handleSubmit}
-            initialValues={initialValues || {
-                isOnline: false,
-                audience: 'STUDENT',
+            initialValues={{
+                ...initialValues,
+                mode: eventMode,
+                audience: initialValues?.audience || 'STUDENT',
             }}
             disabled={disabled}
         >
@@ -277,7 +278,7 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
                         rules={[{ required: true, message: 'Please upload event logo' }]}
                         style={{ marginBottom: 0 }}
                     >
-                        <ImageUpload type="POSTER" height={350} />
+                        <ImageUpload type="POSTER" height={400} />
                     </Form.Item>
                 </Col>
                 <Col xs={24} md={18}>
@@ -286,7 +287,7 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
                         rules={[{ required: true, message: 'Please upload event banner' }]}
                         style={{ marginBottom: 0 }}
                     >
-                        <ImageUpload type="BANNER" height={350} />
+                        <ImageUpload type="BANNER" height={400} />
                     </Form.Item>
                 </Col>
             </Row>
@@ -392,7 +393,7 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
 
 
 
-            <Form.Item label={<b>Mode</b>} name="mode" initialValue={eventMode}>
+            <Form.Item label={<b>Mode</b>} name="mode">
                 <Radio.Group onChange={(e: { target: { value: 'OFFLINE' | 'ONLINE' | 'HYBRID' } }) => setEventMode(e.target.value)}>
                     <Radio value="OFFLINE">Offline</Radio>
                     <Radio value="ONLINE">Online</Radio>

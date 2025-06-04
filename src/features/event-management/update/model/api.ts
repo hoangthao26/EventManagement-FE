@@ -16,4 +16,8 @@ export const updateEvent = async (departmentCode: string, eventId: number, paylo
 
 export const updateEventStatus = async (departmentCode: string, eventId: number, newStatus: EventStatus): Promise<void> => {
     await axiosInstance.put(`/events/management/${departmentCode}/event/${eventId}/status?newStatus=${newStatus}`);
+};
+
+export const deleteEvent = async (departmentCode: string, eventId: number): Promise<void> => {
+    await axiosInstance.delete(`/events/management/${departmentCode}/event/${eventId}`);
 }; 

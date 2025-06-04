@@ -48,7 +48,7 @@ export const useAuth = () => {
 
     const logout = async () => {
         try {
-            const refreshToken = localStorage.getItem('refreshToken');
+            const refreshToken = session?.refreshToken;
             if (!refreshToken) {
                 throw new Error('No refresh token available');
             }
