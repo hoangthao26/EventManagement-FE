@@ -128,20 +128,31 @@ export function EventMembers({ departmentCode, eventId }: EventMembersProps) {
         new Set(members.flatMap(m => m.roleName))
     ).map(role => ({ value: role, label: getRoleLabel(role) }));
 
-    // Lọc members theo role và search
-    const filteredMembers = members.filter(member => {
-        // Filter theo role
-        const matchRole =
-            roleFilter.length === 0 ||
-            member.roleName.some(role => roleFilter.includes(role));
-        // Filter theo search
-        const keyword = searchText.trim().toLowerCase();
-        const matchSearch =
-            !keyword ||
-            member.staffName.toLowerCase().includes(keyword) ||
-            member.email.toLowerCase().includes(keyword);
-        return matchRole && matchSearch;
-    });
+    // Lọc và sắp xếp members theo role, search và thời gian update
+    const filteredMembers = members
+        .filter(member => {
+            // Filter theo role
+            const matchRole =
+                roleFilter.length === 0 ||
+                member.roleName.some(role => roleFilter.includes(role));
+            // Filter theo search
+            const keyword = searchText.trim().toLowerCase();
+            const matchSearch =
+                !keyword ||
+                member.staffName.toLowerCase().includes(keyword) ||
+                member.email.toLowerCase().includes(keyword);
+            return matchRole && matchSearch;
+        })
+        .sort((a, b) => {
+            // Sắp xếp theo thời gian update mới nhất
+            return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+        });
+
+
+    const handleRoleChange = (value: string[]) => {
+        setSelectedAddRole(value);
+        form.setFieldsValue({ role: value });
+    };
 
     const columns = [
         {
@@ -251,6 +262,7 @@ export function EventMembers({ departmentCode, eventId }: EventMembersProps) {
                 onCancel={() => {
                     setIsModalOpen(false);
                     form.resetFields();
+                    setSelectedAddRole([]);
                 }}
                 footer={null}
             >
@@ -258,6 +270,7 @@ export function EventMembers({ departmentCode, eventId }: EventMembersProps) {
                     form={form}
                     onFinish={handleAddMember}
                     layout="vertical"
+                    initialValues={{ role: [] }}
                 >
                     <Form.Item
                         name="email"
@@ -275,26 +288,24 @@ export function EventMembers({ departmentCode, eventId }: EventMembersProps) {
                         label="Role"
                         rules={[{ required: true, message: 'Please select at least one role!' }]}
                     >
-                        <Select
-                            mode="multiple"
-                            placeholder="Select role(s)"
-                            value={selectedAddRole}
-                            onChange={(value: string[]) => {
-                                setSelectedAddRole(value);
-                                form.setFieldValue('role', value);
-                            }}
-                            options={roleOptions}
-                        />
-                        {selectedAddRole.length > 0 && (
-                            <div style={{ color: '#888', marginTop: 4 }}>
-                                {selectedAddRole.map(role => {
-                                    const found = roleOptions.find(opt => opt.value === role);
-                                    return found ? (
-                                        <div key={role}>{getRoleLabel(found.value)}: {found.description}</div>
-                                    ) : null;
-                                })}
-                            </div>
-                        )}
+                        <div>
+                            <Select
+                                mode="multiple"
+                                placeholder="Select role(s)"
+                                onChange={handleRoleChange}
+                                options={roleOptions}
+                            />
+                            {selectedAddRole.length > 0 && (
+                                <div style={{ color: '#888', marginTop: 4 }}>
+                                    {selectedAddRole.map(role => {
+                                        const found = roleOptions.find(opt => opt.value === role);
+                                        return found ? (
+                                            <div key={role}>{getRoleLabel(found.value)}: {found.description}</div>
+                                        ) : null;
+                                    })}
+                                </div>
+                            )}
+                        </div>
                     </Form.Item>
 
                     <Form.Item>
@@ -305,6 +316,7 @@ export function EventMembers({ departmentCode, eventId }: EventMembersProps) {
                             <Button onClick={() => {
                                 setIsModalOpen(false);
                                 form.resetFields();
+                                setSelectedAddRole([]);
                             }}>
                                 Cancel
                             </Button>
@@ -317,27 +329,32 @@ export function EventMembers({ departmentCode, eventId }: EventMembersProps) {
                 title="Update Member Role"
                 open={editModalOpen}
                 onOk={handleUpdateRole}
-                onCancel={() => setEditModalOpen(false)}
+                onCancel={() => {
+                    setEditModalOpen(false);
+                    setSelectedAddRole([]);
+                }}
                 okText="Update"
                 cancelText="Cancel"
             >
-                <Select
-                    mode="multiple"
-                    value={selectedAddRole}
-                    onChange={setSelectedAddRole}
-                    style={{ width: '100%' }}
-                    options={roleOptions}
-                />
-                {selectedAddRole.length > 0 && (
-                    <div style={{ color: '#888', marginTop: 8 }}>
-                        {selectedAddRole.map(role => {
-                            const found = roleOptions.find(opt => opt.value === role);
-                            return found ? (
-                                <div key={role}>{getRoleLabel(found.value)}: {found.description}</div>
-                            ) : null;
-                        })}
-                    </div>
-                )}
+                <div>
+                    <Select
+                        mode="multiple"
+                        value={selectedAddRole}
+                        onChange={setSelectedAddRole}
+                        style={{ width: '100%' }}
+                        options={roleOptions}
+                    />
+                    {selectedAddRole.length > 0 && (
+                        <div style={{ color: '#888', marginTop: 8 }}>
+                            {selectedAddRole.map(role => {
+                                const found = roleOptions.find(opt => opt.value === role);
+                                return found ? (
+                                    <div key={role}>{getRoleLabel(found.value)}: {found.description}</div>
+                                ) : null;
+                            })}
+                        </div>
+                    )}
+                </div>
             </Modal>
         </div>
     );

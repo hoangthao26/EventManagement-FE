@@ -75,6 +75,7 @@ export const useAuth = () => {
 
     const redirectBasedOnRole = () => {
         if (!session?.user?.roles) {
+            console.log('No roles found, redirecting to unauthorized');
             router.push("/unauthorized");
             return;
         }
@@ -82,13 +83,20 @@ export const useAuth = () => {
         const roles = session.user.roles;
         const currentPath = window.location.pathname;
 
+
         // Nếu đang ở trang root hoặc login, chuyển hướng dựa trên role
         if (currentPath === "/" || currentPath === "/login") {
             if (roles.includes("ADMIN")) {
+                console.log('Admin role detected, redirecting to admin');
                 router.push("/admin");
             } else if (roles.includes("LECTURER") || roles.includes("STUDENT")) {
-                router.push("/");
+                console.log('Lecturer/Student role detected, staying on home page');
+                // Don't redirect if already on home page
+                if (currentPath !== "/") {
+                    router.push("/");
+                }
             } else {
+                console.log('No valid role detected, redirecting to unauthorized');
                 router.push("/unauthorized");
             }
             return;
@@ -104,9 +112,13 @@ export const useAuth = () => {
 
     // Thêm useEffect để theo dõi thay đổi session
     useEffect(() => {
+
+
         if (status === "authenticated" && session?.user?.roles) {
+
             redirectBasedOnRole();
         } else if (status === "unauthenticated" && window.location.pathname !== "/login") {
+            console.log('User unauthenticated, redirecting to login');
             router.push("/login");
         }
     }, [status, session]);

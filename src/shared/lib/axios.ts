@@ -56,7 +56,22 @@ axiosInstance.interceptors.request.use(
     async (config) => {
         const session = await getSession();
         if (session?.accessToken) {
-            config.headers.Authorization = `Bearer ${session.accessToken}`;
+            // Kiểm tra và refresh token nếu cần
+            if (shouldRefreshToken(session.accessToken)) {
+                try {
+                    const response = await axiosInstance.post('/auth/refresh', {
+                        refreshToken: session.refreshToken
+                    });
+                    const { accessToken } = response.data;
+                    config.headers.Authorization = `Bearer ${accessToken}`;
+                } catch (error) {
+                    console.error('Failed to refresh token:', error);
+                    // Nếu refresh thất bại, vẫn sử dụng token cũ
+                    config.headers.Authorization = `Bearer ${session.accessToken}`;
+                }
+            } else {
+                config.headers.Authorization = `Bearer ${session.accessToken}`;
+            }
         }
         return config;
     },

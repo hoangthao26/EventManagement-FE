@@ -10,7 +10,7 @@ import { SearchOutlined, CalendarOutlined, EnvironmentOutlined, TeamOutlined, Cl
 import { format, parseISO } from "date-fns";
 import HomeLayout from "@/widgets/layouts/ui/HomeLayout";
 import { DatePicker } from 'antd';
- import moment from "moment";
+import moment from "moment";
 
 const { RangePicker } = DatePicker;
 const { Title, Paragraph, Text } = Typography;
@@ -73,7 +73,7 @@ export default function EventsPage() {
     const [selectedDepartment, setSelectedDepartment] = useState<number | null>(null);  // Change this
     const [dateRange, setDateRange] = useState<[moment.Moment, moment.Moment] | null>(null);
     const [mode, setMode] = useState<EventMode | null>(null);  // Change this
-    
+
     // State for dropdown options
     const [eventTypes, setEventTypes] = useState<EventType[]>([]);
     const [tags, setTags] = useState<Tag[]>([]);
@@ -89,7 +89,7 @@ export default function EventsPage() {
                     apiCall<Tag[]>('/tags/active'),
                     apiCall<Department[]>('/departments'),
                 ]);
-                
+
                 setAllEvents(events);
                 setFilteredEvents(events);
                 setEventTypes(types);
@@ -115,7 +115,7 @@ export default function EventsPage() {
         // Filter by search term
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
-            result = result.filter(event => 
+            result = result.filter(event =>
                 event.name.toLowerCase().includes(term) ||
                 event.description.toLowerCase().includes(term)
             );
@@ -123,14 +123,14 @@ export default function EventsPage() {
 
         // Filter by event type
         if (selectedType !== null) {  // Change this condition
-            result = result.filter(event => 
+            result = result.filter(event =>
                 eventTypes.find(type => type.id === selectedType)?.name === event.typeName
             );
         }
 
         // Filter by department
         if (selectedDepartment !== null) {
-            result = result.filter(event => 
+            result = result.filter(event =>
                 departments.find(dept => dept.id === selectedDepartment)?.name === event.departmentName
             );
         }
@@ -185,8 +185,8 @@ export default function EventsPage() {
     return (
         <HomeLayout>
             <div style={{ padding: "24px" }}>
-                <div style={{ 
-                    textAlign: 'center', 
+                <div style={{
+                    textAlign: 'center',
                     marginBottom: '32px',
                     background: '#ff8533',
                     padding: '24px',
@@ -288,7 +288,7 @@ export default function EventsPage() {
                                 />
                             </Col>
                             <Col>
-                                <Button 
+                                <Button
                                     icon={<ClearOutlined />}
                                     onClick={resetFilters}
                                 >
@@ -312,7 +312,7 @@ export default function EventsPage() {
                                             style={{ height: 200, objectFit: 'cover' }}
                                         />
                                     }
-                                    
+
                                 >
                                     <Space direction="vertical" style={{ width: '100%' }} size={12}>
                                         {/* Fix blinking tags by adding a fixed height container */}
@@ -320,13 +320,13 @@ export default function EventsPage() {
                                             <Space size={[0, 8]} wrap>
                                                 {getEventTypeTag(event.typeName)}
                                                 {getModeTag(event.mode)}
-                                                
+
                                             </Space>
                                         </div>
 
                                         {/* Title with ellipsis */}
-                                        <Typography.Title 
-                                            level={4} 
+                                        <Typography.Title
+                                            level={4}
                                             ellipsis={{ rows: 1 }}
                                             style={{ marginTop: 0, marginBottom: 0 }}
                                         >
@@ -334,7 +334,7 @@ export default function EventsPage() {
                                         </Typography.Title>
 
                                         {/* Description with ellipsis */}
-                            
+
                                         <Space direction="vertical" size="small" style={{ width: '100%' }}>
                                             <Text type="secondary" ellipsis>
                                                 <CalendarOutlined /> {format(parseISO(event.startTime), "dd/MM/yyyy HH:mm")}
@@ -345,7 +345,7 @@ export default function EventsPage() {
                                         </Space>
 
                                         <Button type="primary" block
-                                        onClick={() => router.push(`/events/${event.id}`)}
+                                            onClick={() => router.push(`/events/${event.id}`)}
                                         >
                                             Xem chi tiết
                                         </Button>

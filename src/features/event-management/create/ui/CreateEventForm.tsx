@@ -11,6 +11,7 @@ import styles from '../styles/ImageUpload.module.css';
 import { useRouter } from 'next/navigation';
 import { useAntdMessage } from '@/shared/lib/hooks/useAntdMessage';
 import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
+import dayjs from 'dayjs';
 const { Title } = Typography;
 
 interface CreateEventFormProps {
@@ -107,6 +108,7 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
     const [editorValue, setEditorValue] = useState(String(initialValues?.description ?? ''));
     const [previewOpen, setPreviewOpen] = useState(false);
     const [previewImage, setPreviewImage] = useState('');
+    const [checkinTimeTouched, setCheckinTimeTouched] = useState(false);
 
     useEffect(() => {
         fetchEventTypes().then(setEventTypes);
@@ -116,7 +118,19 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
     // Set initial values when they change
     useEffect(() => {
         if (initialValues) {
-            form.setFieldsValue(initialValues);
+            // Convert checkinStart/checkinEnd to dayjs for RangePicker
+            if (initialValues.checkinStart && initialValues.checkinEnd) {
+                form.setFieldsValue({
+                    ...initialValues,
+                    checkinTimeRange: [
+                        dayjs(initialValues.checkinStart),
+                        dayjs(initialValues.checkinEnd)
+                    ]
+                });
+            } else {
+                form.setFieldsValue(initialValues);
+            }
+            console.log('initialValues.checkinTimeRange:', initialValues?.checkinTimeRange);
             if (editorRef.current && !editorRef.current.getContent()) {
                 editorRef.current.setContent(initialValues.description);
             }
@@ -221,6 +235,7 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
             }
 
             // Build payload 
+            const [checkinStart, checkinEnd] = values.checkinTimeRange || [];
             const payload = {
                 name: values.name,
                 description,
@@ -239,6 +254,8 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
                 endTime: values.timeRange[1].toISOString(),
                 registrationStart: values.registrationTimeRange[0].toISOString(),
                 registrationEnd: values.registrationTimeRange[1].toISOString(),
+                checkinStart,
+                checkinEnd,
             };
 
             // Gọi API tạo event
@@ -267,6 +284,14 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
                 audience: initialValues?.audience || 'STUDENT',
             }}
             disabled={disabled}
+            onValuesChange={(changed: any, all: any) => {
+                if (changed.timeRange && !checkinTimeTouched) {
+                    form.setFieldsValue({ checkinTimeRange: changed.timeRange });
+                }
+                if (changed.checkinTimeRange) {
+                    setCheckinTimeTouched(true);
+                }
+            }}
         >
             <div style={{ fontWeight: 'bold', color: '#222', marginBottom: 8 }}>
                 Upload images
@@ -484,6 +509,19 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
                     </Form.Item>
                 </Col>
             </Row>
+
+            <Form.Item
+                label="Check-in Time"
+                name="checkinTimeRange"
+                rules={[{ required: true, message: 'Please select check-in time range' }]}
+            >
+                <DatePicker.RangePicker
+                    showTime
+                    style={{ width: '100%' }}
+                    format="YYYY-MM-DD HH:mm"
+                    disabled={disabled}
+                />
+            </Form.Item>
 
             <Form.Item label={<b>Gallery images</b>} name="imageUrls">
                 <Upload
