@@ -2,7 +2,7 @@
 
 import { Upload } from 'antd';
 import { InboxOutlined } from '@ant-design/icons';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { UploadProps } from 'antd/es/upload/interface';
 import { IMAGE_DIMENSIONS } from '../lib/constants';
 import styles from '../styles/ImageUpload.module.css';
@@ -21,6 +21,19 @@ export function ImageUpload({ type, value, onChange, children, height = 400 }: I
     const [imageUrl, setImageUrl] = useState<string>(typeof value === 'string' ? value : value ? URL.createObjectURL(value) : '');
     const [isHovered, setIsHovered] = useState(false);
     const { showError } = useAntdMessage();
+
+    useEffect(() => {
+        if (typeof value === 'string') {
+            setImageUrl(value);
+            setImageFile(null);
+        } else if (value instanceof File) {
+            setImageUrl(URL.createObjectURL(value));
+            setImageFile(value);
+        } else {
+            setImageUrl('');
+            setImageFile(null);
+        }
+    }, [value]);
 
     const beforeUpload: UploadProps['beforeUpload'] = (file) => {
         const isImage = file.type.startsWith('image/');
@@ -86,8 +99,7 @@ export function ImageUpload({ type, value, onChange, children, height = 400 }: I
                         alt="upload"
                         style={{
                             width: '100%',
-                            height: 350,
-                            maxHeight: 350,
+                            height: '100%',
                             objectFit: 'cover',
                             transition: 'filter 0.3s ease',
                             borderRadius: 4

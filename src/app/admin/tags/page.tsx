@@ -1,13 +1,14 @@
 "use client"
 
 import DashboardLayout from "@/widgets/layouts/ui/DashboardLayout";
-import { Table, Button, Modal, Form, Input, message, Row, Col } from "antd";
+import { Table, Button, Modal, Form, Input, Row, Col } from "antd";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/features/auth/model/useAuth";
 import axios from "axios";
 import Loading from "@/shared/ui/Loading";
 import { useSession } from "next-auth/react";
 import { SearchOutlined } from "@ant-design/icons";
+import { useAntdMessage } from "@/shared/lib/hooks/useAntdMessage";
 
 interface TagType {
     id: number;
@@ -31,6 +32,7 @@ export default function TagsPage() {
     const [searchText, setSearchText] = useState('');
     const [searchedColumn, setSearchedColumn] = useState('');
     const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+    const { showSuccess, showError } = useAntdMessage();
 
     const handleSearch = (selectedKeys: string[], confirm: () => void, dataIndex: keyof TagType) => {
         confirm();
@@ -144,13 +146,13 @@ export default function TagsPage() {
             }, {
                 headers: { Authorization: `Bearer ${session?.accessToken}` }
             });
-            message.success("Tag created successfully!");
+            showSuccess("Tag created successfully!");
             setModalCreate(false);
             form.resetFields();
             fetchData();
         } catch (err: any) {
             console.error("Failed to create tag:", err);
-            message.error(err.response?.data?.message || "Failed to create tag");
+            showError(err.response?.data?.message || "Failed to create tag");
         } finally {
             setLoading(false);
         }
@@ -170,20 +172,20 @@ export default function TagsPage() {
             setLoading(true);
             const values = await editForm.validateFields();
             
-            await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/tags/update/${editingTag?.id}`, {
+            await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/tags/${editingTag?.id}`, {
                 name: values.name,
                 description: values.description
             }, {
                 headers: { Authorization: `Bearer ${session?.accessToken}` }
             });
-            message.success("Tag updated successfully!");
+            showSuccess("Tag updated successfully!");
             setEditModalOpen(false);
             editForm.resetFields();
             setEditingTag(null);
             fetchData();
         } catch (err: any) {
             console.error("Failed to update tag:", err);
-            message.error(err.response?.data?.message || "Failed to update tag");
+            showError(err.response?.data?.message || "Failed to update tag");
         } finally {
             setLoading(false);
         }
@@ -191,14 +193,14 @@ export default function TagsPage() {
 
     const handleDisable = async (record: TagType) => {
         try {
-            await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/tags/disable/${record.id}`, {}, {
+            await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/tags/${record.id}`, {
                 headers: { Authorization: `Bearer ${session?.accessToken}` }
             });
-            message.success("Tag disabled successfully!");
+            showSuccess("Tag deleted successfully!");
             fetchData();
         } catch (err: any) {
-            console.error("Failed to disable tag:", err);
-            message.error(err.response?.data?.message || "Failed to disable tag");
+            console.error("Failed to delete tag:", err);
+            showError(err.response?.data?.message || "Failed to delete tag");
         }
     };
 

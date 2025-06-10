@@ -1,7 +1,7 @@
 "use client"
 
 import DashboardLayout from "@/widgets/layouts/ui/DashboardLayout";
-import { Table, Button, Modal, Form, Input, message, Row, Col, Space } from "antd";
+import { Table, Button, Modal, Form, Input, Row, Col } from "antd";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/features/auth/model/useAuth";
 import axios from "axios";
@@ -9,6 +9,7 @@ import Loading from "@/shared/ui/Loading";
 import { useSession } from "next-auth/react";
 import { ImageUpload } from "@/features/event-management/create/ui/ImageUpload";
 import { SearchOutlined } from "@ant-design/icons";
+import { useAntdMessage } from "@/shared/lib/hooks/useAntdMessage";
 
 export default function DepartmentsPage() {
     const { status } = useAuth();
@@ -27,6 +28,7 @@ export default function DepartmentsPage() {
     const [selectedDepartment, setSelectedDepartment] = useState<any>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedKeys, setSelectedKeys] = useState([]);
+    const { showSuccess, showError } = useAntdMessage();
 
     const handleSearch = (selectedKeys: string[], confirm: () => void, dataIndex: string) => {
         confirm();
@@ -107,7 +109,10 @@ export default function DepartmentsPage() {
             title: '',
             key: 'action',
             render: (_: any, record: any) => (
-                <Button type="link" onClick={() => handleEdit(record)}>Edit</Button>
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                    <Button type="link" onClick={() => handleEdit(record)}>Edit</Button>
+                    <Button type="link" danger onClick={() => handleDelete(record)}>Delete</Button>
+                </div>
             )
         }
     ]
@@ -189,27 +194,45 @@ export default function DepartmentsPage() {
             await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/departments`, payload, {
                 headers: { Authorization: `Bearer ${session?.accessToken}` }
             });
-            message.success("Department created successfully!");
+            showSuccess("Department created successfully!");
             setModalCreate(false);
             form.resetFields();
             fetchData();
         } catch (err: any) {
             console.error("Failed to create department:", err);
-            message.error(err.response?.data?.message || "Failed to create department");
+            showError(err.response?.data?.message || "Failed to create department");
         } finally {
             setLoading(false);
         }
     };
-    const handleEdit = (record: any) => {
-        setEditingDepartment(record);
-        editForm.setFieldsValue({
-            name: record.name,
-            code: record.code,
-            description: record.description,
-            poster: record.avatarUrl,
-            banner: record.bannerUrl,
-        });
-        setEditModalOpen(true);
+    const handleEdit = async (record: any) => {
+        setLoading(true);
+        try {
+            const response = await axios.get(
+                `${process.env.NEXT_PUBLIC_API_URL}/departments/detail/${record.id}`,
+                {
+                    headers: { Authorization: `Bearer ${session?.accessToken}` }
+                }
+            );
+            const detail = response.data;
+            setEditingDepartment(detail);
+
+            // Set initial values including the image URLs
+            const initialValues = {
+                name: detail.name,
+                code: detail.code,
+                description: detail.description,
+                poster: detail.avatarUrl || null,  // Ensure we pass null if no URL exists
+                banner: detail.bannerUrl || null   // Ensure we pass null if no URL exists
+            };
+            
+            editForm.setFieldsValue(initialValues);
+            setEditModalOpen(true);
+        } catch (err) {
+            showError('Failed to load department details');
+        } finally {
+            setLoading(false);
+        }
     };
     const handleUpdate = async () => {
         try {
@@ -236,17 +259,17 @@ export default function DepartmentsPage() {
             };
             console.log('API payload:', payload);
 
-            await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/departments/${editingDepartment.id}`, payload, {
+            await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/departments/update/${editingDepartment.id}`, payload, {
                 headers: { Authorization: `Bearer ${session?.accessToken}` }
             });
-            message.success("Department updated successfully!");
+            showSuccess("Department updated successfully!");
             setEditModalOpen(false);
             editForm.resetFields();
             setEditingDepartment(null);
             fetchData();
         } catch (err: any) {
             console.error("Failed to update department:", err);
-            message.error(err.response?.data?.message || "Failed to update department");
+            showError(err.response?.data?.message || "Failed to update department");
         } finally {
             setLoading(false);
         }
@@ -264,13 +287,32 @@ export default function DepartmentsPage() {
             setIsDetailModalOpen(true);
         } catch (error) {
             console.error('Error fetching department details:', error);
-            message.error('Failed to load department details');
+            showError('Failed to load department details');
         } finally {
             setDetailLoading(false);
         }
     };
     const handleView = (record: any) => {
         fetchDepartmentDetail(record.id);
+    };
+    const handleDelete = async (record: any) => {
+        try {
+            setLoading(true);
+            await axios.put(
+                `${process.env.NEXT_PUBLIC_API_URL}/departments/update-status/${record.id}`,
+                {},
+                {
+                    headers: { Authorization: `Bearer ${session?.accessToken}` }
+                }
+            );
+            showSuccess("Department status updated (deleted/restored) successfully!");
+            fetchData();
+        } catch (err: any) {
+            console.error("Failed to update department status:", err);
+            showError(err.response?.data?.message || "Failed to update department status");
+        } finally {
+            setLoading(false);
+        }
     };
     useEffect(() => {
         fetchData()
@@ -326,6 +368,7 @@ export default function DepartmentsPage() {
                 confirmLoading={loading}
                 okText="Update"
                 width={800}
+                style={{ top: 20 }}
             >
                 <Form form={editForm} layout="vertical">
                     <Row gutter={16}>
