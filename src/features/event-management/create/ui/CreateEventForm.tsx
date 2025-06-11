@@ -127,6 +127,14 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
                         dayjs(initialValues.checkinEnd)
                     ]
                 });
+            } else if (initialValues.timeRange) {
+                const [start, end] = initialValues.timeRange;
+                const checkinStart = start.subtract(1, 'hour');
+                const checkinEnd = start.add(1, 'hour');
+                form.setFieldsValue({
+                    ...initialValues,
+                    checkinTimeRange: [checkinStart, checkinEnd]
+                });
             } else {
                 form.setFieldsValue(initialValues);
             }
@@ -260,7 +268,8 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
 
             // Gọi API tạo event
             await onSubmit({ ...payload, departmentCode: values.departmentCode });
-            // Chuyển hướng sang trang organizer/my-events sau khi tạo thành công
+            // Hiển thị message thành công và chuyển hướng
+            showSuccess('Event created successfully');
             router.push('/organizer/my-events');
         } catch (err) {
             console.error('Error creating event:', err);
@@ -285,8 +294,11 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
             }}
             disabled={disabled}
             onValuesChange={(changed: any, all: any) => {
-                if (changed.timeRange && !checkinTimeTouched) {
-                    form.setFieldsValue({ checkinTimeRange: changed.timeRange });
+                if (changed.timeRange) {
+                    const [start, end] = changed.timeRange;
+                    const checkinStart = start.subtract(1, 'hour');
+                    const checkinEnd = start.add(1, 'hour');
+                    form.setFieldsValue({ checkinTimeRange: [checkinStart, checkinEnd] });
                 }
                 if (changed.checkinTimeRange) {
                     setCheckinTimeTouched(true);
@@ -496,7 +508,7 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
                         name="timeRange"
                         rules={[{ required: true, message: 'Please select event time' }]}
                     >
-                        <DatePicker.RangePicker showTime style={{ width: '100%' }} placeholder={["Start date", "End date"]} />
+                        <DatePicker.RangePicker showTime style={{ width: '100%' }} placeholder={["Start date", "End date"]} format="YYYY-MM-DD HH:mm" />
                     </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
@@ -505,22 +517,33 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
                         name="registrationTimeRange"
                         rules={[{ required: true, message: 'Please select registration time' }]}
                     >
-                        <DatePicker.RangePicker showTime style={{ width: '100%' }} placeholder={["Start date", "End date"]} />
+                        <DatePicker.RangePicker showTime style={{ width: '100%' }} placeholder={["Start date", "End date"]} format="YYYY-MM-DD HH:mm" />
                     </Form.Item>
                 </Col>
             </Row>
 
             <Form.Item
-                label="Check-in Time"
+                label={<b>Check-in time</b>}
                 name="checkinTimeRange"
-                rules={[{ required: true, message: 'Please select check-in time range' }]}
+                rules={[
+                    { required: true, message: 'Please select check-in time' },
+                    ({ getFieldValue }: { getFieldValue: (field: string) => any }) => ({
+                        validator(_: any, value: any) {
+                            if (!value) return Promise.resolve();
+                            const [checkinStart, checkinEnd] = value;
+                            const endTime = getFieldValue('timeRange')[1];
+                            if (checkinStart >= checkinEnd) {
+                                return Promise.reject(new Error('Check-in start time must be before check-in end time'));
+                            }
+                            if (checkinEnd >= endTime) {
+                                return Promise.reject(new Error('Check-in end time must be before event end time'));
+                            }
+                            return Promise.resolve();
+                        },
+                    }),
+                ]}
             >
-                <DatePicker.RangePicker
-                    showTime
-                    style={{ width: '100%' }}
-                    format="YYYY-MM-DD HH:mm"
-                    disabled={disabled}
-                />
+                <DatePicker.RangePicker showTime style={{ width: '100%' }} placeholder={["Start date", "End date"]} format="YYYY-MM-DD HH:mm" />
             </Form.Item>
 
             <Form.Item label={<b>Gallery images</b>} name="imageUrls">

@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, ChangeEvent } from 'react';
-import { Card, Input, Button, Descriptions, Typography, message, Space } from 'antd';
+import { Card, Input, Button, Descriptions, Typography, Space } from 'antd';
 import { SearchOutlined, UserOutlined, MailOutlined, IdcardOutlined } from '@ant-design/icons';
 import { Participant } from '../model/types';
 import { searchParticipant, checkInParticipant } from '../model/api';
 import { format } from 'date-fns';
 import { QRScanner } from './QRScanner';
+import { useAntdMessage } from '@/shared/lib/hooks/useAntdMessage';
 
 const { Title, Text } = Typography;
 
@@ -19,10 +20,11 @@ export function CheckInForm({ eventId }: CheckInFormProps) {
     const [loading, setLoading] = useState(false);
     const [participant, setParticipant] = useState<Participant | null>(null);
     const [checkingIn, setCheckingIn] = useState(false);
+    const { showSuccess, showError, showWarning } = useAntdMessage();
 
     const handleSearch = async () => {
         if (!email) {
-            message.warning('Please enter an email address');
+            showWarning('Please enter an email address');
             return;
         }
 
@@ -31,12 +33,13 @@ export function CheckInForm({ eventId }: CheckInFormProps) {
             const result = await searchParticipant(eventId, email);
             if (result) {
                 setParticipant(result);
-            } else {
-                message.error('Participant not found');
-                setParticipant(null);
             }
         } catch (error) {
-            message.error('Error searching for participant');
+            if (error instanceof Error) {
+                showError(error.message);
+            } else {
+                showError('An unexpected error occurred');
+            }
             setParticipant(null);
         } finally {
             setLoading(false);
@@ -52,9 +55,9 @@ export function CheckInForm({ eventId }: CheckInFormProps) {
             // Refetch lại participant sau khi check-in
             const updated = await searchParticipant(eventId, participant.email);
             setParticipant(updated);
-            message.success('Check-in successful');
+            showSuccess('Check-in successful');
         } catch (error) {
-            message.error('Error during check-in');
+            showError('Error during check-in');
         } finally {
             setCheckingIn(false);
         }

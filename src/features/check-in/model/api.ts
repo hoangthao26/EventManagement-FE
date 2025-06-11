@@ -35,13 +35,33 @@ export const getStaffEvents = async (): Promise<Event[]> => {
 // Tìm kiếm participant theo email
 export const searchParticipant = async (eventId: number, email: string): Promise<Participant | null> => {
     const session = await getSession();
-    const res = await fetch(`${API_BASE}/registrations/${eventId}/search?email=${encodeURIComponent(email)}`, {
-        headers: {
-            'Authorization': `Bearer ${session?.accessToken}`,
-        },
-    });
-    if (!res.ok) return null;
-    return res.json();
+    try {
+        const res = await fetch(`${API_BASE}/registrations/${eventId}/search?email=${encodeURIComponent(email)}`, {
+            headers: {
+                'Authorization': `Bearer ${session?.accessToken}`,
+            },
+        });
+
+        if (res.status === 400) {
+            throw new Error('Invalid input. Please check the email format.');
+        }
+        if (res.status === 403) {
+            throw new Error('You do not have permission to search registrations.');
+        }
+        if (res.status === 404) {
+            throw new Error('User not found.');
+        }
+        if (!res.ok) {
+            throw new Error('Failed to search participant');
+        }
+
+        return res.json();
+    } catch (error) {
+        if (error instanceof Error) {
+            throw error;
+        }
+        throw new Error('An unexpected error occurred');
+    }
 };
 
 // Check-in participant

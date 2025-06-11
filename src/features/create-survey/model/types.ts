@@ -1,15 +1,24 @@
-export type SurveyQuestionType = 'TEXT' | 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE';
+export type SurveyQuestionType = 'TEXT' | 'RADIO' | 'CHECKBOX' | 'DROPDOWN' | 'RATING';
+
+export interface SurveyOption {
+    text: string;
+    orderNum: number;
+}
 
 export interface SurveyQuestion {
-    id: number; // id tăng dần
-    type: SurveyQuestionType;
+    id: string;
     question: string;
-    description?: string;
-    required: boolean;
-    options?: string[]; // chỉ dùng cho SINGLE_CHOICE, MULTIPLE_CHOICE
+    orderNum: number;
+    type: SurveyQuestionType;
+    isRequired: boolean;
+    options?: SurveyOption[];
 }
 
 export interface SurveyFormData {
     eventId: number;
+    title: string;
+    description: string;
+    startTime: string;
+    endTime: string;
     questions: SurveyQuestion[];
 } 
