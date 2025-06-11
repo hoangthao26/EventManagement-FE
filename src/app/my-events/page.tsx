@@ -29,6 +29,7 @@ interface RegisteredEvent {
     registrationStatus: string;
     typeName: string;
     departmentName: string;
+    // ...other fields from eventInfo if needed
 }
 
 type EventMode = 'ONLINE' | 'OFFLINE' | 'HYBRID';
@@ -43,16 +44,22 @@ export default function MyEventsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [dateRange, setDateRange] = useState<[moment.Moment, moment.Moment] | null>(null);
     const [mode, setMode] = useState<EventMode | null>(null);
+    const [cancelledEvents, setCancelledEvents] = useState<number[]>([]);
 
     useEffect(() => {
         let isSubscribed = true;
 
         const fetchRegisteredEvents = async () => {
             try {
-                const data = await apiCall<RegisteredEvent[]>('/events/registered');
+                const rawData = await apiCall<any[]>('/events/registered');
+                // Map eventInfo + registrationStatus into a flat object
+                const mappedData: RegisteredEvent[] = rawData.map(item => ({
+                    ...item.eventInfo,
+                    registrationStatus: item.registrationStatus,
+                }));
                 if (isSubscribed) {
-                    setAllEvents(data);
-                    setFiltereredEvents(data);
+                    setAllEvents(mappedData);
+                    setFiltereredEvents(mappedData);
                 }
             } catch (error) {
                 if (isSubscribed) {
@@ -104,8 +111,11 @@ export default function MyEventsPage() {
             });
         }
 
+        // Exclude cancelled events from the list
+        result = result.filter(event => !cancelledEvents.includes(event.id));
+
         setFiltereredEvents(result);
-    }, [allEvents, searchTerm, mode, dateRange]);
+    }, [allEvents, searchTerm, mode, dateRange, cancelledEvents]);
 
     const getEventTypeTag = (type: string) => {
         const typeColors: Record<string, string> = {
@@ -161,12 +171,10 @@ export default function MyEventsPage() {
                 description: 'Successfully cancelled registration'
             });
 
-            // Refresh the events list
-            const data = await apiCall<RegisteredEvent[]>('/events/registered');
-            setAllEvents(data);
-            setFiltereredEvents(data);
+            // Mark this event as cancelled
+            setCancelledEvents(prev => [...prev, selectedEventId]);
+
             setIsModalOpen(false);
-            window.location.reload(); // Reload to reflect changes
         } catch (error) {
             notification.error({
                 message: 'Error',
@@ -253,9 +261,10 @@ export default function MyEventsPage() {
                                             danger
                                             block
                                             loading={cancelling === event.id}
+                                            disabled={event.registrationStatus === "CANCELED"}
                                             onClick={() => showConfirmModal(event.id)}
                                         >
-                                            Hủy đăng ký
+                                            {event.registrationStatus === "CANCELED" ? "Đã hủy" : "Hủy đăng ký"}
                                         </Button>
                                     </Space>
                                 </Card>
@@ -300,8 +309,8 @@ export default function MyEventsPage() {
                                 </Descriptions>
                                 <Text>
                                     Bạn có chắc chắn muốn hủy đăng ký sự kiện này không?
-                                </Text>    
-                             
+                                </Text>
+
                             </>
                         )}
                     </Space>

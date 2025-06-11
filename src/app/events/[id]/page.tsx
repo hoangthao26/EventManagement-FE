@@ -78,7 +78,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             const resolvedParams = await params;
             setEventId(resolvedParams.id);
         };
-        
+
         getParams();
     }, [params]);
 
@@ -105,7 +105,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     const handleRegister = async () => {
         if (!eventId || !event || !session?.user) return;
         debugger
-        
+
         setRegistering(true);
         try {
             // Create registration request
@@ -120,16 +120,16 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             await apiCall('/registrations', {
                 method: 'POST',
                 headers: {
-                'Content-Type': 'application/json'
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(registrationData),
             });
-            
+
             notification.success({
                 message: 'Success',
                 description: 'Successfully registered for the event',
             });
-            
+
             // Refresh event data
             const data = await apiCall<EventDetail>(`/events/${eventId}`);
             setEvent(data);
@@ -150,6 +150,34 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         setIsModalOpen(true);
     };
 
+    const getRegistrationButtonProps = (status: string | null, isRegistering: boolean, isOpen: boolean) => {
+        if (!isOpen) {
+            return {
+                disabled: true,
+                children: new Date() < new Date(event?.registrationStart || '') ? 'Chưa mở đăng ký' : 'Đã đóng đăng ký'
+            };
+        }
+        switch (status) {
+            case 'REGISTERED':
+                return {
+                    disabled: true,
+                    icon: <CheckCircleOutlined />,
+                    children: 'Đã đăng ký'
+                };
+
+            case 'CANCELLED':
+                return {
+                    disabled: true,
+
+                };
+            default:
+                return {
+                    disabled: isRegistering,
+                    children: isRegistering ? 'Đang đăng ký...' : 'Đăng ký ngay'
+                };
+        }
+    };
+
     if (loading || !eventId) {
         return <Loading />;
     }
@@ -157,52 +185,52 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     if (!event) {
         return (
             <HomeLayout>
-            <div className="min-h-screen flex items-center justify-center">
-                <Result
-                    status="404"
-                    title={<Title level={1} style={{ fontSize: '64px' }}>404</Title>}
-                    subTitle={
-                        <div className="text-center">
-                            <Title level={3}>Trang không tồn tại</Title>
-                            <Text type="secondary">
-                                Trang bạn đang tìm kiếm không tồn tại!
-                            </Text>
-                        </div>
-                    }
-                    extra={
-                        <Space direction="vertical" style={{ width: '100%' }} size="middle">
-                            <Space wrap>
-                                <Button
-                                    type="primary"
-                                    icon={<HomeOutlined />}
-                                    onClick={() => router.push('/')}
-                                >
-                                    Về trang chủ
-                                </Button>
-                                <Button
-                                    icon={<SearchOutlined />}
-                                    onClick={() => router.push('/events')}
-                                >
-                                    Các sự kiện
-                                </Button>
-                                <Button
-                                    type="text"
-                                    icon={<ArrowLeftOutlined />}
-                                    onClick={() => router.back()}
-                                >
-                                    Quay lại
-                                </Button>
+                <div className="min-h-screen flex items-center justify-center">
+                    <Result
+                        status="404"
+                        title={<Title level={1} style={{ fontSize: '64px' }}>404</Title>}
+                        subTitle={
+                            <div className="text-center">
+                                <Title level={3}>Trang không tồn tại</Title>
+                                <Text type="secondary">
+                                    Trang bạn đang tìm kiếm không tồn tại!
+                                </Text>
+                            </div>
+                        }
+                        extra={
+                            <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                                <Space wrap>
+                                    <Button
+                                        type="primary"
+                                        icon={<HomeOutlined />}
+                                        onClick={() => router.push('/')}
+                                    >
+                                        Về trang chủ
+                                    </Button>
+                                    <Button
+                                        icon={<SearchOutlined />}
+                                        onClick={() => router.push('/events')}
+                                    >
+                                        Các sự kiện
+                                    </Button>
+                                    <Button
+                                        type="text"
+                                        icon={<ArrowLeftOutlined />}
+                                        onClick={() => router.back()}
+                                    >
+                                        Quay lại
+                                    </Button>
+                                </Space>
                             </Space>
-                        </Space>
-                    }
-                />
-            </div>
+                        }
+                    />
+                </div>
             </HomeLayout>
         );
     }
 
-    const isRegistrationOpen = new Date() >= new Date(event.registrationStart) && 
-                             new Date() <= new Date(event.registrationEnd);
+    const isRegistrationOpen = new Date() >= new Date(event.registrationStart) &&
+        new Date() <= new Date(event.registrationEnd);
 
     return (
         <HomeLayout>
@@ -215,10 +243,10 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         preview={false}
                     />
-                    <div style={{ 
-                        position: 'absolute', 
-                        bottom: 0, 
-                        left: 0, 
+                    <div style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
                         right: 0,
                         padding: '2rem',
                         background: 'linear-gradient(transparent, rgba(0,0,0,0.7))'
@@ -228,7 +256,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                             <Space size={[0, 8]} wrap>
                                 <Tag color="blue">{event.typeName}</Tag>
                                 <Tag color="green">{event.mode}</Tag>
-                                
+
                             </Space>
                         </div>
                     </div>
@@ -250,14 +278,14 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                                 <Space direction="vertical" size="large" style={{ width: '100%' }}>
                                     <Descriptions column={1}>
                                         <Descriptions.Item label={<><ClockCircleOutlined /> Time</>}>
-                                            {format(new Date(event.startTime), 'PPp')} - 
+                                            {format(new Date(event.startTime), 'PPp')} -
                                             {format(new Date(event.endTime), 'PPp')}
                                         </Descriptions.Item>
                                         <Descriptions.Item label={<><EnvironmentOutlined /> Location</>}>
                                             {event.mode === 'ONLINE' ? (
                                                 <>{event.platformName}</>
                                             ) : (
-                                                <>{event.locationAddress}<br/>{event.locationAddress2}</>
+                                                <>{event.locationAddress}<br />{event.locationAddress2}</>
                                             )}
                                         </Descriptions.Item>
                                     </Descriptions>
@@ -265,27 +293,27 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                                     <div>
                                         <Title level={5}>Registration Period</Title>
                                         <Text>
-                                            <CalendarOutlined /> {format(new Date(event.registrationStart), 'PP')} - 
+                                            <CalendarOutlined /> {format(new Date(event.registrationStart), 'PP')} -
                                             {format(new Date(event.registrationEnd), 'PP')}
                                         </Text>
                                     </div>
 
                                     <Space direction="vertical" style={{ width: '100%' }}>
-                                        <Statistic 
-                                            title="Total Registered" 
-                                            value={event.registeredCount} 
+                                        <Statistic
+                                            title="Total Registered"
+                                            value={event.registeredCount}
                                             suffix={`/ ${event.maxCapacity}`}
                                         />
                                         {event.audience === 'BOTH' && (
                                             <>
-                                                <Statistic 
-                                                    title="Students Registered" 
-                                                    value={event.registeredCountStudent} 
+                                                <Statistic
+                                                    title="Students Registered"
+                                                    value={event.registeredCountStudent}
                                                     suffix={`/ ${event.maxCapacityStudent}`}
                                                 />
-                                                <Statistic 
-                                                    title="Lecturers Registered" 
-                                                    value={event.registeredCountLecturer} 
+                                                <Statistic
+                                                    title="Lecturers Registered"
+                                                    value={event.registeredCountLecturer}
                                                     suffix={`/ ${event.maxCapacityLecturer}`}
                                                 />
                                             </>
@@ -298,15 +326,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                                         size="large"
                                         block
                                         onClick={showConfirmModal}
-                                        disabled={!isRegistrationOpen || event.isRegistered || registering}
-                                        icon={event.isRegistered ? <CheckCircleOutlined /> : undefined}
-                                    >
-                                        {event.isRegistered 
-                                            ? 'Đã đăng ký' 
-                                            : registering 
-                                                ? 'Đang đăng ký...' 
-                                                : 'Đăng ký ngay'}
-                                    </Button>
+                                        {...getRegistrationButtonProps(event.registrationStatus, registering, isRegistrationOpen)}
+                                    />
 
                                     {/* Add confirmation modal */}
                                     <Modal
@@ -322,11 +343,11 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                                             <Title level={4}>{event?.name}</Title>
                                             <Descriptions column={1}>
                                                 <Descriptions.Item label="Thời gian">
-                                                    {format(new Date(event?.startTime || ''), 'PPp')} - 
+                                                    {format(new Date(event?.startTime || ''), 'PPp')} -
                                                     {format(new Date(event?.endTime || ''), 'PPp')}
                                                 </Descriptions.Item>
                                                 <Descriptions.Item label="Địa điểm">
-                                                    {event?.mode === 'ONLINE' 
+                                                    {event?.mode === 'ONLINE'
                                                         ? event?.platformName
                                                         : `${event?.locationAddress} ${event?.locationAddress2}`}
                                                 </Descriptions.Item>
@@ -336,14 +357,6 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                                             </Paragraph>
                                         </Space>
                                     </Modal>
-
-                                    {!isRegistrationOpen && (
-                                        <Text type="secondary">
-                                            Registration is {new Date() < new Date(event.registrationStart) 
-                                                ? 'not yet open' 
-                                                : 'closed'}
-                                        </Text>
-                                    )}
                                 </Space>
                             </Card>
                         </Col>
