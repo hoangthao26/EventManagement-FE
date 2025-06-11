@@ -33,7 +33,7 @@ const CTASection: React.FC = () => {
     };
 
     fetchUpcomingEvent();
-  }, [apiCall]);
+  }, []); // <-- Only run once on mount
 
   return (
     <div style={{ 

@@ -41,12 +41,6 @@ export const Navbar: React.FC<NavbarProps> = ({ showSearch = false, onSearch, ch
             onClick: () => router.push('/profile'),
         },
         {
-            key: 'settings',
-            icon: <SettingOutlined />,
-            label: 'Settings',
-            onClick: () => router.push('/settings'),
-        },
-        {
             type: 'divider',
         },
         {
@@ -151,10 +145,10 @@ export const Navbar: React.FC<NavbarProps> = ({ showSearch = false, onSearch, ch
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                {pathname === '/' && (
+                { (
                     <>
                         {(isStudent || isLecturer) && (
-                            <Button type="default" onClick={() => router.push('/registered-events')}>
+                            <Button type="default" onClick={() => router.push('/my-events')}>
                                 Registered Events
                             </Button>
                         )}

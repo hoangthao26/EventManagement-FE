@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Typography, Card, Space, Tag, Button, notification, Image, Descriptions, Row, Col, Statistic, Result } from 'antd';
+import { Typography, Card, Space, Tag, Button, notification, Image, Descriptions, Row, Col, Statistic, Result, Modal } from 'antd';
 import { ClockCircleOutlined, EnvironmentOutlined, TeamOutlined, CheckCircleOutlined, CalendarOutlined, ShareAltOutlined, HomeOutlined, ArrowLeftOutlined, SearchOutlined } from '@ant-design/icons';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
@@ -56,6 +56,13 @@ interface EventDetail {
     registrationStatus: string | null;
 }
 
+interface RegistrationRequest {
+    email: string;
+    name: string;
+    eventId: number;
+    checkinUrl: string;
+}
+
 export default function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
     const { session, status } = useAuth();
@@ -64,6 +71,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     const [loading, setLoading] = useState(true);
     const [registering, setRegistering] = useState(false);
     const [eventId, setEventId] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
         const getParams = async () => {
@@ -92,15 +100,29 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         };
 
         fetchEventDetail();
-    }, [eventId, apiCall]);
+    }, [eventId]); // <-- Only depend on eventId
 
     const handleRegister = async () => {
-        if (!eventId) return;
+        if (!eventId || !event || !session?.user) return;
+        debugger
         
         setRegistering(true);
         try {
-            await apiCall(`/events/${eventId}/register`, {
+            // Create registration request
+            const registrationData: RegistrationRequest = {
+                email: session.user.email || '',
+                name: session.user.name || '',
+                eventId: event.id,
+                checkinUrl: ''
+            };
+
+            // Call registration API
+            await apiCall('/registrations', {
                 method: 'POST',
+                headers: {
+                'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(registrationData),
             });
             
             notification.success({
@@ -108,9 +130,12 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 description: 'Successfully registered for the event',
             });
             
+            // Refresh event data
             const data = await apiCall<EventDetail>(`/events/${eventId}`);
             setEvent(data);
+            setIsModalOpen(false);
         } catch (error) {
+            console.error('Registration error:', error);
             notification.error({
                 message: 'Error',
                 description: 'Failed to register for the event',
@@ -118,6 +143,11 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         } finally {
             setRegistering(false);
         }
+    };
+
+    const showConfirmModal = () => {
+        if (!event) return;
+        setIsModalOpen(true);
     };
 
     if (loading || !eventId) {
@@ -262,20 +292,50 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                                         )}
                                     </Space>
 
+                                    {/* Update the register button to show modal */}
                                     <Button
                                         type="primary"
                                         size="large"
                                         block
-                                        onClick={handleRegister}
+                                        onClick={showConfirmModal}
                                         disabled={!isRegistrationOpen || event.isRegistered || registering}
                                         icon={event.isRegistered ? <CheckCircleOutlined /> : undefined}
                                     >
                                         {event.isRegistered 
-                                            ? 'Already Registered' 
+                                            ? 'Đã đăng ký' 
                                             : registering 
-                                                ? 'Registering...' 
-                                                : 'Register Now'}
+                                                ? 'Đang đăng ký...' 
+                                                : 'Đăng ký ngay'}
                                     </Button>
+
+                                    {/* Add confirmation modal */}
+                                    <Modal
+                                        title="Xác nhận đăng ký"
+                                        open={isModalOpen}
+                                        onOk={handleRegister}
+                                        onCancel={() => setIsModalOpen(false)}
+                                        confirmLoading={registering}
+                                        okText="Xác nhận"
+                                        cancelText="Hủy"
+                                    >
+                                        <Space direction="vertical" style={{ width: '100%' }}>
+                                            <Title level={4}>{event?.name}</Title>
+                                            <Descriptions column={1}>
+                                                <Descriptions.Item label="Thời gian">
+                                                    {format(new Date(event?.startTime || ''), 'PPp')} - 
+                                                    {format(new Date(event?.endTime || ''), 'PPp')}
+                                                </Descriptions.Item>
+                                                <Descriptions.Item label="Địa điểm">
+                                                    {event?.mode === 'ONLINE' 
+                                                        ? event?.platformName
+                                                        : `${event?.locationAddress} ${event?.locationAddress2}`}
+                                                </Descriptions.Item>
+                                            </Descriptions>
+                                            <Paragraph>
+                                                Bạn có chắc chắn muốn đăng ký tham gia sự kiện này?
+                                            </Paragraph>
+                                        </Space>
+                                    </Modal>
 
                                     {!isRegistrationOpen && (
                                         <Text type="secondary">

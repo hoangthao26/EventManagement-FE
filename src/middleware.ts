@@ -6,6 +6,12 @@ import { checkPermission, getRedirectRoute } from '@/shared/lib/auth/permissions
 export async function middleware(request: NextRequest) {
     const token = await getToken({ req: request });
     const isAuthPage = request.nextUrl.pathname.startsWith('/login');
+    const isPublicPath = request.nextUrl.pathname.match(/^\/($|events$|events\/[^\/]+$|departments$|about$)/);
+
+    // Allow public paths without authentication
+    if (isPublicPath) {
+        return NextResponse.next();
+    }
 
     if (isAuthPage) {
         if (token) {

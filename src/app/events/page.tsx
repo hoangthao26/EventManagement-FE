@@ -81,6 +81,8 @@ export default function EventsPage() {
 
     // Fetch all data on component mount
     useEffect(() => {
+        let isSubscribed = true;
+
         const fetchData = async () => {
             try {
                 const [events, types, activeTags, deps] = await Promise.all([
@@ -90,23 +92,31 @@ export default function EventsPage() {
                     apiCall<Department[]>('/departments'),
                 ]);
                 
-                setAllEvents(events);
-                setFilteredEvents(events);
-                setEventTypes(types);
-                setTags(activeTags);
-                setDepartments(deps);
+                if (isSubscribed) {
+                    setAllEvents(events);
+                    setFilteredEvents(events);
+                    setEventTypes(types);
+                    setTags(activeTags);
+                    setDepartments(deps);
+                    setLoading(false);
+                }
             } catch (error) {
-                notification.error({
-                    message: 'Error',
-                    description: 'Failed to fetch data',
-                });
-            } finally {
-                setLoading(false);
+                if (isSubscribed) {
+                    notification.error({
+                        message: 'Error',
+                        description: 'Failed to fetch data'
+                    });
+                    setLoading(false);
+                }
             }
         };
 
         fetchData();
-    }, [apiCall]);
+
+        return () => {
+            isSubscribed = false;
+        };
+    }, []); // Empty dependency array since we only want to fetch once
 
     // Client-side filtering
     useEffect(() => {
