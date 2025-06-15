@@ -85,6 +85,9 @@ const SurveyPage = () => {
                         <Button type="primary" onClick={handleSave} loading={loading} disabled={!survey.questions || survey.questions.length === 0}>
                             Lưu khảo sát
                         </Button>
+                        <Button danger style={{ marginLeft: 8 }} onClick={() => message.info('API delete survey chưa có sẵn')}>
+                            Xóa khảo sát
+                        </Button>
                     </div>
                 </div>
             </div>

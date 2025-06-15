@@ -2,7 +2,6 @@
 
 import { CheckInForm } from '@/features/check-in/ui/CheckInForm';
 import { QRScanner } from '@/features/check-in/ui/QRScanner';
-import { QRGenerator } from '@/features/check-in/ui/QRGenerator';
 import DashboardLayout from '@/widgets/layouts/ui/DashboardLayout';
 import { use, useEffect, useState } from 'react';
 import { Button, Space, Card } from 'antd';
@@ -56,10 +55,14 @@ export default function CheckInEventPage({ params }: CheckInEventPageProps) {
                         {mode === 'manual' ? (
                             <CheckInForm eventId={eventId} />
                         ) : (
-                            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                minHeight: '300px'
+                            }}>
                                 <QRScanner eventId={eventId} />
-                                <QRGenerator eventId={eventId} />
-                            </Space>
+                            </div>
                         )}
                     </Space>
                 </Card>

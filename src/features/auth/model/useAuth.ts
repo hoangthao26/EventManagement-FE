@@ -3,10 +3,54 @@ import { useRouter } from "next/navigation";
 import { UserRole } from "@/types/next-auth";
 import { useEffect } from "react";
 import { authApi } from "../api/authApi";
+import { jwtDecode } from "jwt-decode";
 
 export const useAuth = () => {
-    const { data: session, status } = useSession();
+    const { data: session, status, update } = useSession();
     const router = useRouter();
+
+    // Check if token is expired
+    const isTokenExpired = (token: string): boolean => {
+        try {
+            const decoded = jwtDecode<{ exp: number }>(token);
+            const expiry = decoded.exp * 1000;
+            const now = Date.now();
+            return now >= expiry;
+        } catch (error) {
+            return true;
+        }
+    };
+
+    // Check if session is valid
+    const isSessionValid = () => {
+        if (!session?.accessToken) return false;
+        return !isTokenExpired(session.accessToken);
+    };
+
+    // Force logout when token is invalid
+    const forceLogout = async () => {
+        try {
+            // Clear local storage
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+
+            // Sign out from next-auth
+            await signOut({ redirect: false });
+
+            // Redirect to login
+            router.push("/login");
+        } catch (error) {
+            console.error("Force logout error:", error);
+            router.push("/login");
+        }
+    };
+
+    // Check session validity on mount and when session changes
+    useEffect(() => {
+        if (status === "authenticated" && !isSessionValid()) {
+            forceLogout();
+        }
+    }, [status, session]);
 
     const login = async () => {
         try {
@@ -110,19 +154,6 @@ export const useAuth = () => {
         }
     };
 
-    // Thêm useEffect để theo dõi thay đổi session
-    useEffect(() => {
-
-
-        if (status === "authenticated" && session?.user?.roles) {
-
-            redirectBasedOnRole();
-        } else if (status === "unauthenticated" && window.location.pathname !== "/login") {
-            console.log('User unauthenticated, redirecting to login');
-            router.push("/login");
-        }
-    }, [status, session]);
-
     const hasRole = (role: UserRole) => {
         return session?.user?.roles?.includes(role) ?? false;
     };
@@ -145,11 +176,12 @@ export const useAuth = () => {
         status,
         login,
         logout,
+        forceLogout,
         redirectBasedOnRole,
         hasRole,
         hasAnyRole,
         getRoleBasedPath,
-        isAuthenticated: !!session,
+        isAuthenticated: !!session && isSessionValid(),
         isLoading: status === "loading"
     };
 }; 

@@ -105,28 +105,44 @@ const handler = NextAuth({
         },
         async session({ session, token }) {
             if (token) {
-                // Kiểm tra token có hợp lệ không
                 try {
                     const decoded = jwtDecode<{ exp: number }>(token.accessToken as string);
                     const expiry = decoded.exp * 1000;
                     const now = Date.now();
 
-                    // Nếu token đã hết hạn, trả về session rỗng
-                    if (now >= expiry) {
-                        return {
-                            ...session,
-                            accessToken: undefined,
-                            refreshToken: undefined,
-                            user: undefined
+                    // If token is expired or will expire in next 5 minutes
+                    if (now >= expiry - 5 * 60 * 1000) {
+                        // Try to refresh token
+                        try {
+                            const response = await authAxiosInstance.post('/auth/refresh', {
+                                refreshToken: token.refreshToken
+                            });
+
+                            // Update session with new tokens
+                            session.accessToken = response.data.token;
+                            session.refreshToken = response.data.refreshToken;
+                            session.user = {
+                                ...session.user,
+                                ...token.user
+                            };
+                        } catch (error) {
+                            // If refresh fails, return empty session
+                            return {
+                                ...session,
+                                accessToken: undefined,
+                                refreshToken: undefined,
+                                user: undefined
+                            };
+                        }
+                    } else {
+                        // Token is still valid
+                        session.accessToken = token.accessToken;
+                        session.refreshToken = token.refreshToken;
+                        session.user = {
+                            ...session.user,
+                            ...token.user
                         };
                     }
-
-                    session.accessToken = token.accessToken;
-                    session.refreshToken = token.refreshToken;
-                    session.user = {
-                        ...session.user,
-                        ...token.user
-                    };
                 } catch (error) {
                     console.error('Token validation error:', error);
                     return {

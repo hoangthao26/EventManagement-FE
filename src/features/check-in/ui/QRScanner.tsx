@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Card, Button, message, Modal } from 'antd';
-import { CameraOutlined, CloseOutlined, ExclamationCircleOutlined, ScanOutlined } from '@ant-design/icons';
-import { checkInParticipant } from '../model/api';
+import { CameraOutlined, CloseOutlined, ExclamationCircleOutlined, ScanOutlined, CheckCircleTwoTone } from '@ant-design/icons';
+import { checkInParticipant, checkInByQRCode } from '../model/api';
 import { Html5QrcodeScanner, Html5QrcodeScanType, Html5QrcodeSupportedFormats } from 'html5-qrcode';
-
+import styles from './QRScanner.module.css';
+import { useAntdMessage } from '@/shared/lib/hooks/useAntdMessage';
 
 interface QRScannerProps {
     eventId: number;
@@ -18,6 +19,9 @@ export function QRScanner({ eventId, onSuccess }: QRScannerProps) {
     const [errorModalVisible, setErrorModalVisible] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+    const { showSuccess, showError } = useAntdMessage();
+    const isProcessing = useRef(false);
+    const [successModalVisible, setSuccessModalVisible] = useState(false);
 
     useEffect(() => {
         if (isScanning) {
@@ -25,7 +29,7 @@ export function QRScanner({ eventId, onSuccess }: QRScannerProps) {
                 const scanner = new Html5QrcodeScanner(
                     'qr-reader',
                     {
-                        fps: 10,
+                        fps: 20,
                         qrbox: { width: 250, height: 250 },
                         aspectRatio: 1.0,
                         formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
@@ -56,51 +60,31 @@ export function QRScanner({ eventId, onSuccess }: QRScannerProps) {
     }, [isScanning]);
 
     const handleScan = async (decodedText: string) => {
+        if (isProcessing.current) return;
+        isProcessing.current = true;
         try {
             setLoading(true);
-            // QR code chứa: email,eventId
-            const [email, qrEventId] = decodedText.split(',');
-            if (!email || !qrEventId) {
-                setErrorMessage('QR code invalid format');
-                setErrorModalVisible(true);
-                setIsScanning(false);
-                return;
-            }
-            if (Number(qrEventId) !== eventId) {
-                setErrorMessage('Wrong event');
-                setErrorModalVisible(true);
-                setIsScanning(false);
-                return;
-            }
             try {
-                await checkInParticipant(eventId, email);
-                message.success('Check-in successful');
+                await checkInByQRCode(decodedText);
+                setSuccessModalVisible(true);
                 onSuccess?.();
                 setIsScanning(false);
             } catch (error: any) {
-                const apiMessage = error?.message || '';
-                const apiStatus = error?.status;
-                if (
-                    (typeof apiMessage === 'string' && apiMessage.includes('User not found')) ||
-                    apiStatus === 404
-                ) {
-                    setErrorMessage('Email not found in this event');
-                    setErrorModalVisible(true);
-                    setIsScanning(false);
-                } else if (
-                    typeof apiMessage === 'string' && apiMessage.includes('already been checked in')
-                ) {
-                    setErrorMessage('This registration has already been checked in.');
-                    setErrorModalVisible(true);
-                    setIsScanning(false);
+                const status = error?.response?.status;
+                if (status === 400) {
+                    showError('Invalid QR code or check-in not allowed');
+                } else if (status === 403) {
+                    showError('You do not have permission to check-in');
+                } else if (status === 404) {
+                    showError('Event, user or registration not found');
                 } else {
-                    setErrorMessage('Error during check-in');
-                    setErrorModalVisible(true);
-                    setIsScanning(false);
+                    showError('Error during check-in');
                 }
+                setIsScanning(false);
             }
         } finally {
             setLoading(false);
+            setTimeout(() => { isProcessing.current = false; }, 500);
         }
     };
 
@@ -121,6 +105,8 @@ export function QRScanner({ eventId, onSuccess }: QRScannerProps) {
                     type="primary"
                     icon={<ScanOutlined />}
                     onClick={() => setIsScanning(true)}
+                    size="large"
+                    style={{ height: '50px', fontSize: '16px' }}
                 >
                     Scan QR Code
                 </Button>
@@ -137,22 +123,19 @@ export function QRScanner({ eventId, onSuccess }: QRScannerProps) {
                             scannerRef.current.clear();
                             scannerRef.current = null;
                         }
+                        isProcessing.current = false;
                     }}
                 >
                     <Card loading={loading} bodyStyle={{ padding: 0, boxShadow: 'none', border: 'none' }}>
-                        <div
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                minHeight: 340,
-                                width: '100%',
-                                paddingTop: 16,
-                                paddingBottom: 0,
-                                background: 'transparent',
-                            }}
-                        >
-                            <div id="qr-reader" style={{ width: 300, height: 300 }} />
+                        <div className={styles.scannerContainer}>
+                            <div id="qr-reader" className={styles.qrReader} />
+                            <div className={styles.scanLine} />
+                            <div className={styles.cornerBorder}>
+                                <div className={styles.cornerTopLeft} />
+                                <div className={styles.cornerTopRight} />
+                                <div className={styles.cornerBottomLeft} />
+                                <div className={styles.cornerBottomRight} />
+                            </div>
                         </div>
                     </Card>
                 </Modal>
@@ -179,6 +162,24 @@ export function QRScanner({ eventId, onSuccess }: QRScannerProps) {
                 ]}
             >
                 <p>{errorMessage}</p>
+            </Modal>
+
+            <Modal
+                open={successModalVisible}
+                onCancel={() => setSuccessModalVisible(false)}
+                footer={[
+                    <Button key="ok" type="primary" onClick={() => setSuccessModalVisible(false)}>
+                        Confirm
+                    </Button>
+                ]}
+                centered
+                maskClosable
+                closeIcon
+                width={400}
+                bodyStyle={{ textAlign: 'center', padding: '40px 24px' }}
+            >
+                <CheckCircleTwoTone twoToneColor="#52c41a" style={{ fontSize: 64, marginBottom: 16 }} />
+                <div style={{ fontSize: 24, fontWeight: 600, marginBottom: 8 }}>Check-in successful</div>
             </Modal>
         </div>
     );
