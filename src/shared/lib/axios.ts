@@ -56,7 +56,22 @@ axiosInstance.interceptors.request.use(
     async (config) => {
         const session = await getSession();
         if (session?.accessToken) {
-            config.headers.Authorization = `Bearer ${session.accessToken}`;
+            // Kiểm tra và refresh token nếu cần
+            if (shouldRefreshToken(session.accessToken)) {
+                try {
+                    const response = await axiosInstance.post('/auth/refresh', {
+                        refreshToken: session.refreshToken
+                    });
+                    const { accessToken } = response.data;
+                    config.headers.Authorization = `Bearer ${accessToken}`;
+                } catch (error) {
+                    console.error('Failed to refresh token:', error);
+                    // Nếu refresh thất bại, vẫn sử dụng token cũ
+                    config.headers.Authorization = `Bearer ${session.accessToken}`;
+                }
+            } else {
+                config.headers.Authorization = `Bearer ${session.accessToken}`;
+            }
         }
         return config;
     },
@@ -69,6 +84,7 @@ axiosInstance.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
+        // Handle 401 Unauthorized errors
         if (error.response?.status === 401 && !originalRequest._retry) {
             if (isRefreshing) {
                 return new Promise((resolve, reject) => {
@@ -86,24 +102,39 @@ axiosInstance.interceptors.response.use(
 
             try {
                 const session = await getSession();
-                if (session?.refreshToken) {
-                    const response = await axiosInstance.post('/auth/refresh', {
-                        refreshToken: session.refreshToken
-                    });
-                    const { accessToken } = response.data;
-
-                    processQueue(null, accessToken);
-                    originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-                    return axiosInstance(originalRequest);
+                if (!session?.refreshToken) {
+                    throw new Error('No refresh token available');
                 }
+
+                const response = await axiosInstance.post('/auth/refresh', {
+                    refreshToken: session.refreshToken
+                });
+                const { accessToken } = response.data;
+
+                processQueue(null, accessToken);
+                originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+                return axiosInstance(originalRequest);
             } catch (error) {
                 processQueue(error, null);
+                // Clear session and redirect to login
                 await signOut({ redirect: true, callbackUrl: '/login' });
                 return Promise.reject(error);
             } finally {
                 isRefreshing = false;
             }
         }
+
+        // Handle 403 Forbidden errors
+        if (error.response?.status === 403) {
+            const session = await getSession();
+            if (session?.accessToken) {
+                // Check if token is expired
+                if (isTokenExpired(session.accessToken)) {
+                    await signOut({ redirect: true, callbackUrl: '/login' });
+                }
+            }
+        }
+
         return Promise.reject(error);
     }
 );

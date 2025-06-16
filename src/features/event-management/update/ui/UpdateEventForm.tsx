@@ -119,11 +119,15 @@ export function UpdateEventForm({ departmentCode, eventId, departments }: Update
         platformUrl: eventData.platform?.url,
         timeRange: [dayjs.utc(eventData.startTime).local(), dayjs.utc(eventData.endTime).local()],
         registrationTimeRange: [dayjs.utc(eventData.registrationStart).local(), dayjs.utc(eventData.registrationEnd).local()],
+        checkinStart: eventData.checkinStart ? dayjs.utc(eventData.checkinStart).local() : undefined,
+        checkinEnd: eventData.checkinEnd ? dayjs.utc(eventData.checkinEnd).local() : undefined,
         poster: eventData.posterUrl,
         banner: eventData.bannerUrl,
         imageUrls: eventData.images.map(img => img.url),
         description: eventData.description,
     };
+
+    console.log('UpdateEventForm initialValues:', initialValues);
 
     return (
         <div>

@@ -29,7 +29,7 @@ export const checkPermission = (path: string, roles: UserRole[] = [], userDepart
     const hasBaseRole = roles.some(role => allowedRoles.includes(role));
 
     // Đặc biệt xử lý route /organizer
-    if (matchedRoute === '/organizer') {
+    if (matchedRoute.startsWith('/organizer')) {
         return hasBaseRole && isHeadOfAnyDepartment(userDepartmentRoles);
     }
 
@@ -39,7 +39,7 @@ export const checkPermission = (path: string, roles: UserRole[] = [], userDepart
 // Lấy route redirect dựa trên role
 export const getRedirectRoute = (roles: UserRole[] = []) => {
     if (roles.includes('ADMIN')) return '/admin';
-    if (roles.includes('LECTURER')) return '/organizer';
+    if (roles.includes('LECTURER')) return '/organizer/my-events'; // Redirect về trang my-events
     if (roles.includes('STUDENT')) return '/my-events';
     return '/';
 }; 
