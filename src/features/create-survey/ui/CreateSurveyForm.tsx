@@ -76,7 +76,7 @@ export const CreateSurveyForm: React.FC<CreateSurveyFormProps> = ({ value = {}, 
             orderNum: nextOrder,
             type,
             isRequired: false,
-            options: type === 'TEXT' ? undefined : [{ text: '', orderNum: 1 }],
+            options: type === 'TEXT' ? undefined : [{ id: nanoid(), text: '', orderNum: 1 }],
         };
         setQuestions([...questions, newQ]);
         setActiveKey([String(newQ.orderNum)]);
@@ -112,7 +112,7 @@ export const CreateSurveyForm: React.FC<CreateSurveyFormProps> = ({ value = {}, 
     const handleAddOption = (qIdx: number) => {
         const opts = questions[qIdx].options ? [...questions[qIdx].options!] : [];
         const nextOrder = opts.length > 0 ? Math.max(...opts.map(o => o.orderNum)) + 1 : 1;
-        opts.push({ text: '', orderNum: nextOrder });
+        opts.push({ id: nanoid(), text: '', orderNum: nextOrder });
         handleChange(qIdx, { options: opts });
     };
 
@@ -122,7 +122,7 @@ export const CreateSurveyForm: React.FC<CreateSurveyFormProps> = ({ value = {}, 
     };
 
     const handleTypeChange = (idx: number, type: SurveyQuestionType) => {
-        handleChange(idx, { type, options: type === 'TEXT' ? undefined : [{ text: '', orderNum: 1 }] });
+        handleChange(idx, { type, options: type === 'TEXT' ? undefined : [{ id: nanoid(), text: '', orderNum: 1 }] });
     };
 
     return (

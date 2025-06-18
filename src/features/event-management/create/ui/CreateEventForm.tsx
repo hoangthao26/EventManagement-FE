@@ -506,7 +506,28 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
                     <Form.Item
                         label={<b>Event time</b>}
                         name="timeRange"
-                        rules={[{ required: true, message: 'Please select event time' }]}
+                        rules={[
+                            { required: true, message: 'Please select event time' },
+                            ({ getFieldValue }: { getFieldValue: (field: string) => any }) => ({
+                                validator(_: any, value: any) {
+                                    if (!value) return Promise.resolve();
+                                    const [start, end] = value;
+                                    const now = dayjs();
+
+                                    if (start.isBefore(now)) {
+                                        return Promise.reject(new Error('Event start time cannot be in the past'));
+                                    }
+                                    if (start >= end) {
+                                        return Promise.reject(new Error('Start time must be before end time'));
+                                    }
+                                    const registrationEnd = getFieldValue('registrationTimeRange')?.[1];
+                                    if (registrationEnd && registrationEnd > start) {
+                                        return Promise.reject(new Error('Registration end time must be before or equal to event start time'));
+                                    }
+                                    return Promise.resolve();
+                                },
+                            }),
+                        ]}
                     >
                         <DatePicker.RangePicker showTime style={{ width: '100%' }} placeholder={["Start date", "End date"]} format="YYYY-MM-DD HH:mm" />
                     </Form.Item>
@@ -515,7 +536,28 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
                     <Form.Item
                         label={<b>Registration time</b>}
                         name="registrationTimeRange"
-                        rules={[{ required: true, message: 'Please select registration time' }]}
+                        rules={[
+                            { required: true, message: 'Please select registration time' },
+                            ({ getFieldValue }: { getFieldValue: (field: string) => any }) => ({
+                                validator(_: any, value: any) {
+                                    if (!value) return Promise.resolve();
+                                    const [start, end] = value;
+                                    const now = dayjs();
+
+                                    if (start.isBefore(now)) {
+                                        return Promise.reject(new Error('Registration start time cannot be in the past'));
+                                    }
+                                    if (start >= end) {
+                                        return Promise.reject(new Error('Registration start time must be before registration end time'));
+                                    }
+                                    const eventStart = getFieldValue('timeRange')?.[0];
+                                    if (eventStart && end > eventStart) {
+                                        return Promise.reject(new Error('Registration end time must be before or equal to event start time'));
+                                    }
+                                    return Promise.resolve();
+                                },
+                            }),
+                        ]}
                     >
                         <DatePicker.RangePicker showTime style={{ width: '100%' }} placeholder={["Start date", "End date"]} format="YYYY-MM-DD HH:mm" />
                     </Form.Item>
@@ -531,11 +573,16 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
                         validator(_: any, value: any) {
                             if (!value) return Promise.resolve();
                             const [checkinStart, checkinEnd] = value;
-                            const endTime = getFieldValue('timeRange')[1];
+                            const now = dayjs();
+
+                            if (checkinStart.isBefore(now)) {
+                                return Promise.reject(new Error('Check-in start time cannot be in the past'));
+                            }
                             if (checkinStart >= checkinEnd) {
                                 return Promise.reject(new Error('Check-in start time must be before check-in end time'));
                             }
-                            if (checkinEnd >= endTime) {
+                            const eventEnd = getFieldValue('timeRange')?.[1];
+                            if (eventEnd && checkinEnd >= eventEnd) {
                                 return Promise.reject(new Error('Check-in end time must be before event end time'));
                             }
                             return Promise.resolve();
