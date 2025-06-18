@@ -2,14 +2,14 @@
 
 import { Upload } from 'antd';
 import { InboxOutlined } from '@ant-design/icons';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { UploadProps } from 'antd/es/upload/interface';
 import { IMAGE_DIMENSIONS } from '../lib/constants';
 import styles from '../styles/ImageUpload.module.css';
 import { useAntdMessage } from '@/shared/lib/hooks/useAntdMessage';
 
 interface ImageUploadProps {
-    type: 'POSTER' | 'BANNER';
+    type: 'POSTER' | 'BANNER' | 'AVATAR';
     value?: File | string;
     onChange?: (file: File | null) => void;
     children?: React.ReactNode;
@@ -21,6 +21,19 @@ export function ImageUpload({ type, value, onChange, children, height = 400 }: I
     const [imageUrl, setImageUrl] = useState<string>(typeof value === 'string' ? value : value ? URL.createObjectURL(value) : '');
     const [isHovered, setIsHovered] = useState(false);
     const { showError } = useAntdMessage();
+
+    useEffect(() => {
+        if (typeof value === 'string') {
+            setImageUrl(value);
+            setImageFile(null);
+        } else if (value instanceof File) {
+            setImageUrl(URL.createObjectURL(value));
+            setImageFile(value);
+        } else {
+            setImageUrl('');
+            setImageFile(null);
+        }
+    }, [value]);
 
     const beforeUpload: UploadProps['beforeUpload'] = (file) => {
         const isImage = file.type.startsWith('image/');
@@ -86,8 +99,7 @@ export function ImageUpload({ type, value, onChange, children, height = 400 }: I
                         alt="upload"
                         style={{
                             width: '100%',
-                            height: 400,
-                            maxHeight: 400,
+                            height: '100%',
                             objectFit: 'cover',
                             transition: 'filter 0.3s ease',
                             borderRadius: 4
@@ -133,7 +145,7 @@ export function ImageUpload({ type, value, onChange, children, height = 400 }: I
                     {children || (
                         <>
                             <span style={{ color: '#fa8c16', fontSize: '14px', marginBottom: 4 }}>
-                                {type === 'BANNER' ? 'Upload Banner Image' : 'Upload Poster Image'}
+                                {type === 'BANNER' ? 'Upload Banner Image' : type === 'AVATAR' ? 'Upload Avatar Image' : 'Upload Poster Image'}
                             </span>
                             <span style={{ color: '#8c8c8c', fontSize: '14px' }}>
                                 {IMAGE_DIMENSIONS[type].label}
