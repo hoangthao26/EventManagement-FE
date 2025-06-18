@@ -7,6 +7,7 @@ import { nanoid } from 'nanoid';
 import type { SurveyCreate, SurveyQuestion, SurveyOption } from '../model/types';
 import { EVENT_STATUS_COLORS } from '@/features/event-management/list/lib/constants';
 import type { EventStatus } from '@/features/event-management/list/model/types';
+import { InfoCircleOutlined } from '@ant-design/icons';
 
 const { Panel } = Collapse;
 const { Text } = Typography;
@@ -18,6 +19,12 @@ const QUESTION_TYPE_OPTIONS = [
     { label: 'Dropdown', value: 'DROPDOWN', icon: <DownOutlined /> },
     { label: 'Đánh giá (Rating)', value: 'RATING', icon: <StarFilled style={{ color: '#faad14' }} /> },
 ];
+
+const SURVEY_STATUS_COLORS = {
+    'DRAFT': '#faad14',
+    'OPENED': '#52c41a',
+    'CLOSED': '#1890ff'
+};
 
 interface SurveyFormProps {
     initialValues?: Partial<SurveyCreate>;
@@ -34,6 +41,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ initialValues = {}, onSu
     const collapseRef = React.useRef<HTMLDivElement>(null);
     // State cho lỗi động của câu hỏi
     const [questionErrors, setQuestionErrors] = React.useState<string[]>([]);
+    const isFormDisabled = initialValues?.status === 'OPENED' || initialValues?.status === 'CLOSED';
 
     // Normalize initialValues for Form (convert date strings to dayjs)
     const normalizedInitialValues = {
@@ -70,15 +78,17 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ initialValues = {}, onSu
     }, [questions.length]);
 
     React.useEffect(() => {
-        // Set lại questions khi initialValues thay đổi (ví dụ khi update)
-        if (initialValues.questions) setQuestions(initialValues.questions);
-        // Set lại date fields cho Form
+        // Chỉ set form values 1 lần duy nhất khi component mount
         form.setFieldsValue({
             ...initialValues,
             startTime: initialValues.startTime ? dayjs(initialValues.startTime) : undefined,
             endTime: initialValues.endTime ? dayjs(initialValues.endTime) : undefined,
         });
-    }, [initialValues, form]);
+
+        if (initialValues.questions) {
+            setQuestions(initialValues.questions);
+        }
+    }, []);
 
     // Survey info change
     const handleSurveyInfoChange = (changed: any, all: any) => {
@@ -87,6 +97,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ initialValues = {}, onSu
 
     // Question logic
     const handleAdd = (type: string = 'TEXT') => {
+        if (isFormDisabled) return;
         const nextOrder = questions.length > 0 ? Math.max(...questions.map(q => q.orderNum)) + 1 : 1;
         const newQ: SurveyQuestion = {
             id: nanoid(),
@@ -101,6 +112,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ initialValues = {}, onSu
     };
 
     const handleChange = (idx: number, q: Partial<SurveyQuestion>) => {
+        if (isFormDisabled) return;
         const newList = questions.map((item, i) =>
             i === idx ? { ...item, ...q } : item
         );
@@ -108,6 +120,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ initialValues = {}, onSu
     };
 
     const handleDelete = (idx: number) => {
+        if (isFormDisabled) return;
         const deletedOrder = questions[idx].orderNum;
         const newList = questions.filter((_, i) => i !== idx);
         setQuestions(newList);
@@ -122,12 +135,14 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ initialValues = {}, onSu
     };
 
     const handleOptionChange = (qIdx: number, optIdx: number, val: string) => {
+        if (isFormDisabled) return;
         const opts = questions[qIdx].options ? [...questions[qIdx].options!] : [];
         opts[optIdx] = { ...opts[optIdx], text: val };
         handleChange(qIdx, { options: opts });
     };
 
     const handleAddOption = (qIdx: number) => {
+        if (isFormDisabled) return;
         const opts = questions[qIdx].options ? [...questions[qIdx].options!] : [];
         const nextOrder = opts.length > 0 ? Math.max(...opts.map(o => o.orderNum)) + 1 : 1;
         opts.push({ id: nanoid(), text: '', orderNum: nextOrder });
@@ -135,16 +150,19 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ initialValues = {}, onSu
     };
 
     const handleRemoveOption = (qIdx: number, optIdx: number) => {
+        if (isFormDisabled) return;
         const opts = questions[qIdx].options ? questions[qIdx].options!.filter((_, i) => i !== optIdx) : [];
         handleChange(qIdx, { options: opts });
     };
 
     const handleTypeChange = (idx: number, type: string) => {
+        if (isFormDisabled) return;
         handleChange(idx, { type, options: type === 'TEXT' ? undefined : [{ id: nanoid(), text: '', orderNum: 1 }] });
     };
 
     // Validate và submit
     const handleFinish = async (values: any) => {
+        if (isFormDisabled) return;
         let hasError = false;
         setQuestionErrors([]);
         // Validate thời gian
@@ -221,18 +239,27 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ initialValues = {}, onSu
         // Build payload - giữ nguyên questions với id, API sẽ tự xử lý
         const basePayload = {
             ...values,
-            startTime: typeof values.startTime === 'string' ? values.startTime : dayjs(values.startTime).toISOString(),
-            endTime: typeof values.endTime === 'string' ? values.endTime : dayjs(values.endTime).toISOString(),
-            questions: questions.map((q, idx) => ({
-                ...q,
-                orderNum: idx + 1,
-                options: (q.type === 'TEXT' || q.type === 'RATING')
-                    ? []
-                    : (q.options ? q.options.map((opt, oidx) => ({
-                        ...opt,
-                        orderNum: oidx + 1
-                    })) : [])
-            })),
+            startTime: typeof values.startTime === 'string' ? values.startTime : dayjs(values.startTime).format('YYYY-MM-DDTHH:mm:ss'),
+            endTime: typeof values.endTime === 'string' ? values.endTime : dayjs(values.endTime).format('YYYY-MM-DDTHH:mm:ss'),
+            questions: questions.map((q, idx) => {
+                const baseQuestion = {
+                    question: q.question,
+                    orderNum: idx + 1,
+                    type: q.type,
+                    isRequired: q.isRequired,
+                    options: (q.type === 'TEXT' || q.type === 'RATING')
+                        ? []
+                        : (q.options ? q.options.map((opt, oidx) => ({
+                            text: opt.text,
+                            orderNum: oidx + 1,
+                            ...(mode === 'update' && opt.id ? { id: opt.id } : {})
+                        })) : [])
+                };
+
+                return mode === 'update' && q.id
+                    ? { ...baseQuestion, id: q.id }
+                    : baseQuestion;
+            })
         };
 
         let payload: SurveyCreate;
@@ -258,9 +285,9 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ initialValues = {}, onSu
                 message={
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 16 }}>
                         <span>
-                            <b>Thời gian sự kiện:</b> {eventDetail?.startTime ? dayjs(eventDetail.startTime).format('YYYY-MM-DD HH:mm') : '...'}
+                            <b>Thời gian sự kiện:</b> {eventDetail?.startTime ? dayjs(eventDetail.startTime).format('DD/MM/YYYY HH:mm') : '...'}
                             {' '}→{' '}
-                            {eventDetail?.endTime ? dayjs(eventDetail.endTime).format('YYYY-MM-DD HH:mm') : '...'}
+                            {eventDetail?.endTime ? dayjs(eventDetail.endTime).format('DD/MM/YYYY HH:mm') : '...'}
                         </span>
                         <span style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
                             <Tag color={EVENT_STATUS_COLORS[eventDetail?.status as EventStatus] || 'default'}
@@ -271,26 +298,61 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ initialValues = {}, onSu
                     </div>
                 }
             />
+
+            {mode === 'update' && initialValues && (
+                <Alert
+                    type="success"
+                    showIcon
+                    icon={<InfoCircleOutlined />}
+                    style={{ marginBottom: 16 }}
+                    message={
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 14 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                <div>
+                                    <b>Trạng thái khảo sát:</b>
+                                    <Tag
+                                        color={SURVEY_STATUS_COLORS[initialValues.status as keyof typeof SURVEY_STATUS_COLORS] || 'default'}
+                                        style={{ marginLeft: 8 }}
+                                    >
+                                        {initialValues.status}
+                                    </Tag>
+                                </div>
+                                <div style={{ display: 'flex', gap: 16 }}>
+                                    {initialValues.createdAt && (
+                                        <span>
+                                            <b>Tạo lúc:</b> {dayjs(initialValues.createdAt).format('DD/MM/YYYY HH:mm')}
+                                        </span>
+                                    )}
+                                    {initialValues.updatedAt && (
+                                        <span>
+                                            <b>Cập nhật lần cuối:</b> {dayjs(initialValues.updatedAt).format('DD/MM/YYYY HH:mm')}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    }
+                />
+            )}
+
             <Form
                 form={form}
                 layout="vertical"
-                initialValues={normalizedInitialValues}
                 onValuesChange={handleSurveyInfoChange}
                 onFinish={handleFinish}
-
             >
                 <Form.Item label={<b style={{ fontSize: 16 }}>Tiêu đề khảo sát</b>} name="title" rules={[{ required: true, message: 'Nhập tiêu đề khảo sát' }]}>
-                    <Input placeholder="Nhập tiêu đề khảo sát" size="large" maxLength={100} />
+                    <Input placeholder="Nhập tiêu đề khảo sát" size="large" maxLength={100} disabled={isFormDisabled} />
                 </Form.Item>
                 <Form.Item label={<b style={{ fontSize: 16 }}>Mô tả</b>} name="description">
-                    <Input.TextArea placeholder="Mô tả khảo sát" size="large" maxLength={350} />
+                    <Input.TextArea placeholder="Mô tả khảo sát" size="large" maxLength={350} disabled={isFormDisabled} />
                 </Form.Item>
                 <Space style={{ width: '100%' }}>
                     <Form.Item label={<b style={{ fontSize: 16 }}>Thời gian bắt đầu</b>} name="startTime" rules={[{ required: true, message: 'Chọn thời gian bắt đầu' }]}>
-                        <DatePicker showTime size="large" style={{ width: 220 }} format="YYYY-MM-DDTHH:mm" />
+                        <DatePicker showTime size="large" style={{ width: 220 }} format="YYYY-MM-DD HH:mm" disabled={isFormDisabled} />
                     </Form.Item>
                     <Form.Item label={<b style={{ fontSize: 16 }}>Thời gian kết thúc</b>} name="endTime" rules={[{ required: true, message: 'Chọn thời gian kết thúc' }]}>
-                        <DatePicker showTime size="large" style={{ width: 220 }} format="YYYY-MM-DDTHH:mm" />
+                        <DatePicker showTime size="large" style={{ width: 220 }} format="YYYY-MM-DD HH:mm" disabled={isFormDisabled} />
                     </Form.Item>
                 </Space>
                 <div style={{ margin: '24px 0 8px 0', fontWeight: 600, fontSize: 16 }}>Danh sách câu hỏi</div>
@@ -315,7 +377,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ initialValues = {}, onSu
                                         </Text>
                                         <div style={{ marginLeft: 'auto' }}>
                                             <Popconfirm title="Xóa câu hỏi này?" onConfirm={(e?: React.MouseEvent<HTMLElement>) => { e?.stopPropagation(); handleDelete(idx); }} onClick={(e: React.MouseEvent<HTMLElement>) => e.stopPropagation()}>
-                                                <Button danger size="small" icon={<DeleteOutlined />} onClick={(e: React.MouseEvent<HTMLElement>) => e.stopPropagation()} />
+                                                <Button danger size="small" icon={<DeleteOutlined />} onClick={(e: React.MouseEvent<HTMLElement>) => e.stopPropagation()} disabled={isFormDisabled} />
                                             </Popconfirm>
                                         </div>
                                     </div>
@@ -335,6 +397,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ initialValues = {}, onSu
                                         onChange={(value: string) => handleTypeChange(idx, value)}
                                         style={{ width: 260 }}
                                         optionLabelProp="label"
+                                        disabled={isFormDisabled}
                                     >
                                         {QUESTION_TYPE_OPTIONS.map(opt => (
                                             <Select.Option key={opt.value} value={opt.value} label={
@@ -359,11 +422,13 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ initialValues = {}, onSu
                                         placeholder="Nhập câu hỏi"
                                         size="large"
                                         style={{ borderRadius: 8 }}
+                                        disabled={isFormDisabled}
                                     />
                                 </Form.Item>
                                 <Form.Item style={{ marginBottom: 12 }}>
                                     <Checkbox
                                         checked={q.isRequired}
+                                        disabled={isFormDisabled}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange(idx, { isRequired: e.target.checked })}
                                     >Yêu cầu trả lời</Checkbox>
                                 </Form.Item>
@@ -377,8 +442,9 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ initialValues = {}, onSu
                                                     placeholder={`Lựa chọn ${optIdx + 1}`}
                                                     style={{ width: 300, borderRadius: 8 }}
                                                     size="large"
+                                                    disabled={isFormDisabled}
                                                 />
-                                                <Button onClick={() => handleRemoveOption(idx, optIdx)} disabled={q.options!.length <= 1} danger>Xóa</Button>
+                                                <Button onClick={() => handleRemoveOption(idx, optIdx)} disabled={q.options!.length <= 1 || isFormDisabled} danger >Xóa</Button>
                                             </Space>
                                         ))}
                                         <Button onClick={() => handleAddOption(idx)} style={{ marginTop: 8 }} icon={<PlusCircleOutlined />}>Thêm lựa chọn</Button>
@@ -395,12 +461,13 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ initialValues = {}, onSu
                         size="large"
                         style={{ borderRadius: 8, background: '#fa8c16', border: 'none', fontWeight: 600, fontSize: 18 }}
                         onClick={() => handleAdd('TEXT')}
+                        disabled={isFormDisabled}
                     >
                         Tạo câu hỏi
                     </Button>
                 </div>
                 <Form.Item style={{ marginTop: 32, textAlign: 'right' }}>
-                    <Button type="primary" htmlType="submit" size="large">
+                    <Button type="primary" htmlType="submit" size="large" disabled={isFormDisabled}>
                         {mode === 'create' ? 'Tạo khảo sát' : 'Cập nhật khảo sát'}
                     </Button>
                 </Form.Item>

@@ -98,4 +98,10 @@ export async function updateSurvey(surveyId: number, departmentCode: string, dat
     const res = await axios.put(`/surveys/${surveyId}?departmentCode=${departmentCode}`, payload);
     if (res.status !== 200) throw new Error('Cập nhật khảo sát thất bại');
     return res.data;
-} 
+}
+
+export async function deleteSurvey(surveyId: number, departmentCode: string, eventId: string | number) {
+    const res = await axios.delete(`/surveys/${surveyId}?eventId=${eventId}&departmentCode=${departmentCode}`);
+    if (res.status !== 200) throw new Error('Xóa khảo sát thất bại');
+    return res.data;
+}

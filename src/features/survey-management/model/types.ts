@@ -20,6 +20,9 @@ export interface SurveyCreate {
     startTime: string;
     endTime: string;
     questions: SurveyQuestion[];
+    status?: 'DRAFT' | 'OPENED' | 'CLOSED';
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 // Types cho API requests
