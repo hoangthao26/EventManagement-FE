@@ -86,8 +86,8 @@ export function ImageUpload({ type, value, onChange, children, height = 400 }: I
                         alt="upload"
                         style={{
                             width: '100%',
-                            height: 350,
-                            maxHeight: 350,
+                            height: 400,
+                            maxHeight: 400,
                             objectFit: 'cover',
                             transition: 'filter 0.3s ease',
                             borderRadius: 4

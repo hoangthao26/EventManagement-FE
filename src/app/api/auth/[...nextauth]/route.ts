@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import axios from "axios";
 import { UserRole } from "@/types/next-auth";
+import { jwtDecode } from "jwt-decode";
 
 // Tạo instance axios với timeout dài hơn cho NextAuth
 const authAxiosInstance = axios.create({
@@ -104,12 +105,53 @@ const handler = NextAuth({
         },
         async session({ session, token }) {
             if (token) {
-                session.accessToken = token.accessToken;
-                session.refreshToken = token.refreshToken;
-                session.user = {
-                    ...session.user,
-                    ...token.user
-                };
+                try {
+                    const decoded = jwtDecode<{ exp: number }>(token.accessToken as string);
+                    const expiry = decoded.exp * 1000;
+                    const now = Date.now();
+
+                    // If token is expired or will expire in next 5 minutes
+                    if (now >= expiry - 5 * 60 * 1000) {
+                        // Try to refresh token
+                        try {
+                            const response = await authAxiosInstance.post('/auth/refresh', {
+                                refreshToken: token.refreshToken
+                            });
+
+                            // Update session with new tokens
+                            session.accessToken = response.data.token;
+                            session.refreshToken = response.data.refreshToken;
+                            session.user = {
+                                ...session.user,
+                                ...token.user
+                            };
+                        } catch (error) {
+                            // If refresh fails, return empty session
+                            return {
+                                ...session,
+                                accessToken: undefined,
+                                refreshToken: undefined,
+                                user: undefined
+                            };
+                        }
+                    } else {
+                        // Token is still valid
+                        session.accessToken = token.accessToken;
+                        session.refreshToken = token.refreshToken;
+                        session.user = {
+                            ...session.user,
+                            ...token.user
+                        };
+                    }
+                } catch (error) {
+                    console.error('Token validation error:', error);
+                    return {
+                        ...session,
+                        accessToken: undefined,
+                        refreshToken: undefined,
+                        user: undefined
+                    };
+                }
             }
             return session;
         }
@@ -120,7 +162,7 @@ const handler = NextAuth({
     },
     session: {
         strategy: "jwt",
-        maxAge: 2 * 24 * 60 * 60, // 2 days
+        maxAge: 7 * 24 * 60 * 60, // 7 days - phù hợp với thời gian của refreshToken
     },
     secret: process.env.NEXTAUTH_SECRET,
     debug: false,

@@ -34,6 +34,8 @@ export interface EventDetailsResponse {
     endTime: string;
     registrationStart: string;
     registrationEnd: string;
+    checkinStart?: string;
+    checkinEnd?: string;
     status: EventStatus;
 }
 
@@ -66,4 +68,6 @@ export interface UpdateEventPayload {
     endTime: string;
     registrationStart: string;
     registrationEnd: string;
+    checkinStart?: string;
+    checkinEnd?: string;
 } 

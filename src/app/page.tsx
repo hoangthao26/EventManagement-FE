@@ -19,14 +19,14 @@ export default function HomePage() {
 
   // Remove auth effect
   useEffect(() => {
-      if (status === "unauthenticated") {
-          window.location.href = "/login";
-      }
+    if (status === "unauthenticated") {
+      window.location.href = "/login";
+    }
   }, [status]);
 
   // Remove loading check
   if (status === "loading") {
-      return <Loading />;
+    return <Loading />;
   }
 
   // Mock data
@@ -49,7 +49,7 @@ export default function HomePage() {
       <div style={{ width: '100%', margin: 0, padding: 0 }}>
         <EventCarousel />
       </div>
-      
+
       {/* Statistics section - let the component handle its own container */}
       <StatisticsSection />
 

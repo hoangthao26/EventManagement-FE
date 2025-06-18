@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { checkPermission, getRedirectRoute } from '@/shared/lib/auth/permissions';
+import { jwtDecode } from 'jwt-decode';
 
 export async function middleware(request: NextRequest) {
     const token = await getToken({ req: request });
@@ -13,8 +14,21 @@ export async function middleware(request: NextRequest) {
         return NextResponse.next();
     }
 
+    // Check if token is expired
+    const isTokenExpired = (token: any): boolean => {
+        try {
+            if (!token?.accessToken) return true;
+            const decoded = jwtDecode<{ exp: number }>(token.accessToken);
+            const expiry = decoded.exp * 1000;
+            const now = Date.now();
+            return now >= expiry;
+        } catch (error) {
+            return true;
+        }
+    };
+
     if (isAuthPage) {
-        if (token) {
+        if (token && !isTokenExpired(token)) {
             const roles = token.user?.roles || [];
             const redirectUrl = getRedirectRoute(roles);
             return NextResponse.redirect(new URL(redirectUrl, request.url));
@@ -22,7 +36,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.next();
     }
 
-    if (!token) {
+    if (!token || isTokenExpired(token)) {
         return NextResponse.redirect(new URL('/login', request.url));
     }
 

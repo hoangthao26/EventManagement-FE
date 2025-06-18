@@ -229,9 +229,9 @@ export function EventList({ userDepartmentRoles }: EventListProps) {
                         <EventCard
                             event={event}
                             onOverview={() => router.push(`/organizer/events/${event.id}`)}
-                            onMembers={() => router.push(`/organizer/events/${event.id}/members`)}
+                            onMembers={() => router.push(`/organizer/events/${selectedDepartment}/${event.id}/members`)}
                             onEdit={() => router.push(`/organizer/events/${selectedDepartment}/${event.id}/update`)}
-                            onSurvey={() => router.push(`/organizer/events/${event.id}/survey`)}
+                            onSurvey={() => router.push(`/organizer/events/${selectedDepartment}/${event.id}/survey`)}
                         />
                     </List.Item>
                 )}
