@@ -99,9 +99,6 @@ export default function TagsPage() {
             dataIndex: 'name',
             key: 'name',
             ...getColumnSearchProps('name'),
-            render: (text: string, record: TagType) => (
-                <a onClick={() => handleView(record)}>{text}</a>
-            ),
         },
         {
             title: 'Description',
@@ -204,31 +201,6 @@ export default function TagsPage() {
         }
     };
 
-    const handleView = async (record: TagType) => {
-        Modal.info({
-            title: 'Tag Details',
-            width: 600,
-            content: (
-                <div style={{ marginTop: 16 }}>
-                    <Row gutter={[16, 16]}>
-                        <Col span={24}>
-                            <div>
-                                <strong>Name:</strong> {record.name}
-                            </div>
-                            <div style={{ marginTop: 8 }}>
-                                <strong>Description:</strong>
-                                <div style={{ whiteSpace: 'pre-wrap' }}>
-                                    {record.description || 'No description available'}
-                                </div>
-                            </div>
-                        </Col>
-                    </Row>
-                </div>
-            ),
-            onOk() {},
-        });
-    };
-
     useEffect(() => {
         fetchData();
     }, [session]);
@@ -260,7 +232,7 @@ export default function TagsPage() {
                         <Input />
                     </Form.Item>
                     <Form.Item name="description" label="Description" rules={[{ required: true, message: 'Please input description!' }]}>
-                        <Input.TextArea rows={6} placeholder="Enter tag description" />
+                        <Input.TextArea rows={6} placeholder="Enter tag description" allowClear />
                     </Form.Item>
                 </Form>
             </Modal>
@@ -280,7 +252,7 @@ export default function TagsPage() {
                         <Input />
                     </Form.Item>
                     <Form.Item name="description" label="Description" rules={[{ required: true, message: 'Please input description!' }]}>
-                        <Input.TextArea rows={6} placeholder="Enter tag description" />
+                        <Input.TextArea rows={6} placeholder="Enter tag description" allowClear />
                     </Form.Item>
                 </Form>
             </Modal>
