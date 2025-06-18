@@ -1,12 +1,13 @@
 export type SurveyQuestionType = 'TEXT' | 'RADIO' | 'CHECKBOX' | 'DROPDOWN' | 'RATING';
 
 export interface SurveyOption {
+    id?: string | number;
     text: string;
     orderNum: number;
 }
 
 export interface SurveyQuestion {
-    id: string;
+    id?: string | number;
     question: string;
     orderNum: number;
     type: SurveyQuestionType;

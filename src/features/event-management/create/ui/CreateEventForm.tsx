@@ -173,9 +173,7 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
         try {
             setSubmitting(true);
             const eventName = values.name;
-
-            // Lấy nội dung từ TinyMCE Editor
-            const description = editorValue;
+            const description = values.description;
 
             // Upload poster
             let posterUrl = values.poster;
@@ -242,7 +240,7 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
                 };
             }
 
-            // Build payload 
+            // Build payload với thời gian local (YYYY-MM-DDTHH:mm:ss)
             const [checkinStart, checkinEnd] = values.checkinTimeRange || [];
             const payload = {
                 name: values.name,
@@ -258,13 +256,14 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
                 platform: eventMode !== 'OFFLINE' ? { name: values.platformName, url: values.platformUrl } : undefined,
                 tags: values.tags,
                 imageUrls,
-                startTime: values.timeRange[0].toISOString(),
-                endTime: values.timeRange[1].toISOString(),
-                registrationStart: values.registrationTimeRange[0].toISOString(),
-                registrationEnd: values.registrationTimeRange[1].toISOString(),
-                checkinStart,
-                checkinEnd,
+                startTime: values.timeRange[0].format('YYYY-MM-DDTHH:mm:ss'),
+                endTime: values.timeRange[1].format('YYYY-MM-DDTHH:mm:ss'),
+                registrationStart: values.registrationTimeRange[0].format('YYYY-MM-DDTHH:mm:ss'),
+                registrationEnd: values.registrationTimeRange[1].format('YYYY-MM-DDTHH:mm:ss'),
+                checkinStart: checkinStart ? checkinStart.format('YYYY-MM-DDTHH:mm:ss') : undefined,
+                checkinEnd: checkinEnd ? checkinEnd.format('YYYY-MM-DDTHH:mm:ss') : undefined,
             };
+            console.log('Create event request payload:', payload);
 
             // Gọi API tạo event
             await onSubmit({ ...payload, departmentCode: values.departmentCode });
@@ -506,7 +505,28 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
                     <Form.Item
                         label={<b>Event time</b>}
                         name="timeRange"
-                        rules={[{ required: true, message: 'Please select event time' }]}
+                        rules={[
+                            { required: true, message: 'Please select event time' },
+                            ({ getFieldValue }: { getFieldValue: (field: string) => any }) => ({
+                                validator(_: any, value: any) {
+                                    if (!value) return Promise.resolve();
+                                    const [start, end] = value;
+                                    const now = dayjs();
+
+                                    if (start.isBefore(now)) {
+                                        return Promise.reject(new Error('Event start time cannot be in the past'));
+                                    }
+                                    if (start >= end) {
+                                        return Promise.reject(new Error('Start time must be before end time'));
+                                    }
+                                    const registrationEnd = getFieldValue('registrationTimeRange')?.[1];
+                                    if (registrationEnd && registrationEnd > start) {
+                                        return Promise.reject(new Error('Registration end time must be before or equal to event start time'));
+                                    }
+                                    return Promise.resolve();
+                                },
+                            }),
+                        ]}
                     >
                         <DatePicker.RangePicker showTime style={{ width: '100%' }} placeholder={["Start date", "End date"]} format="YYYY-MM-DD HH:mm" />
                     </Form.Item>
@@ -515,7 +535,28 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
                     <Form.Item
                         label={<b>Registration time</b>}
                         name="registrationTimeRange"
-                        rules={[{ required: true, message: 'Please select registration time' }]}
+                        rules={[
+                            { required: true, message: 'Please select registration time' },
+                            ({ getFieldValue }: { getFieldValue: (field: string) => any }) => ({
+                                validator(_: any, value: any) {
+                                    if (!value) return Promise.resolve();
+                                    const [start, end] = value;
+                                    const now = dayjs();
+
+                                    if (start.isBefore(now)) {
+                                        return Promise.reject(new Error('Registration start time cannot be in the past'));
+                                    }
+                                    if (start >= end) {
+                                        return Promise.reject(new Error('Registration start time must be before registration end time'));
+                                    }
+                                    const eventStart = getFieldValue('timeRange')?.[0];
+                                    if (eventStart && end > eventStart) {
+                                        return Promise.reject(new Error('Registration end time must be before or equal to event start time'));
+                                    }
+                                    return Promise.resolve();
+                                },
+                            }),
+                        ]}
                     >
                         <DatePicker.RangePicker showTime style={{ width: '100%' }} placeholder={["Start date", "End date"]} format="YYYY-MM-DD HH:mm" />
                     </Form.Item>
@@ -531,11 +572,16 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
                         validator(_: any, value: any) {
                             if (!value) return Promise.resolve();
                             const [checkinStart, checkinEnd] = value;
-                            const endTime = getFieldValue('timeRange')[1];
+                            const now = dayjs();
+
+                            if (checkinStart.isBefore(now)) {
+                                return Promise.reject(new Error('Check-in start time cannot be in the past'));
+                            }
                             if (checkinStart >= checkinEnd) {
                                 return Promise.reject(new Error('Check-in start time must be before check-in end time'));
                             }
-                            if (checkinEnd >= endTime) {
+                            const eventEnd = getFieldValue('timeRange')?.[1];
+                            if (eventEnd && checkinEnd >= eventEnd) {
                                 return Promise.reject(new Error('Check-in end time must be before event end time'));
                             }
                             return Promise.resolve();
@@ -571,27 +617,10 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
             )}
             <Form.Item
                 label={<b>Description</b>}
+                name="description"
                 rules={[{ required: true, message: 'Please enter event description' }]}
             >
-                <Editor
-                    apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY}
-                    value={editorValue}
-                    onEditorChange={val => setEditorValue(String(val ?? ''))}
-                    init={{
-                        height: 300,
-                        menubar: false,
-                        plugins: [
-                            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                            'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
-                        ],
-                        toolbar: 'undo redo | blocks | ' +
-                            'bold italic forecolor | alignleft aligncenter ' +
-                            'alignright alignjustify | bullist numlist outdent indent | ' +
-                            'removeformat | help',
-                        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
-                    }}
-                />
+                <Input.TextArea rows={6} maxLength={1000} placeholder="Event description" />
             </Form.Item>
             {statusMessage && (
                 <div style={{ textAlign: 'center', color: '#ff4d4f', marginBottom: 8 }}>
