@@ -30,7 +30,7 @@ export default function CreateEventPage() {
             setLoading(true);
             await createEvent(data);
             message.success('Event created successfully');
-            router.push('/organizer');
+            router.push('/organizer/my-events');
         } catch (error) {
             message.error('Failed to create event');
         } finally {

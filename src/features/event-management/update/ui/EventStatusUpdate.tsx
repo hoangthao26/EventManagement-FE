@@ -3,6 +3,7 @@ import { EditOutlined } from '@ant-design/icons';
 import { EventStatus } from '../../list/model/types';
 import { EVENT_STATUS_COLORS } from '../../list/lib/constants';
 import { updateEventStatus } from '../model/api';
+import { useAntdMessage } from '@/shared/lib/hooks/useAntdMessage';
 import styles from './EventStatusUpdate.module.css';
 import { useState } from 'react';
 
@@ -25,17 +26,18 @@ const STATUS_TRANSITIONS: Record<EventStatus, EventStatus[]> = {
 export function EventStatusUpdate({ departmentCode, eventId, currentStatus, onStatusChange }: EventStatusUpdateProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState<EventStatus | null>(null);
+    const { showSuccess, showError } = useAntdMessage();
 
     const handleStatusChange = async (newStatus: EventStatus) => {
         try {
             await updateEventStatus(departmentCode, eventId, newStatus);
-            message.success('Event status has been updated successfully');
             onStatusChange?.(newStatus);
             setIsModalOpen(false);
             setSelectedStatus(null);
+            showSuccess('Event status updated successfully!');
         } catch (error) {
-            message.error('Failed to update event status');
             console.error('Error updating event status:', error);
+            showError('Failed to update event status');
         }
     };
 

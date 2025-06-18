@@ -12,6 +12,8 @@ export interface CreateEventData {
     endTime: Date;
     registrationStartTime: Date;
     registrationEndTime: Date;
+    checkinStart?: Date;
+    checkinEnd?: Date;
     type: EventType;
     capacity: EventCapacity;
     description: string;

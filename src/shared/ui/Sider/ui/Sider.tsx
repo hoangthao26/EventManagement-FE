@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Layout, Menu } from 'antd';
 import {
     CalendarOutlined,
@@ -10,9 +10,11 @@ import {
     UserOutlined,
     UnorderedListOutlined,
     CheckCircleOutlined,
+    QrcodeOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/features/auth/model/useAuth';
+import { getStaffEvents } from '@/features/check-in/model/api';
 
 const { Sider: AntSider } = Layout;
 
@@ -24,6 +26,19 @@ export const Sider: React.FC<SiderProps> = ({ collapsed }) => {
     const router = useRouter();
     const pathname = usePathname();
     const { session, hasRole } = useAuth();
+
+    // State để lưu danh sách event staff
+    const [staffEvents, setStaffEvents] = useState<any[]>([]);
+    const [loadingStaffEvents, setLoadingStaffEvents] = useState(true);
+
+    useEffect(() => {
+        getStaffEvents()
+            .then(events => setStaffEvents(events))
+            .catch(() => setStaffEvents([]))
+            .finally(() => setLoadingStaffEvents(false));
+    }, []);
+
+    const shouldShowCheckin = staffEvents.length > 0;
 
     const getMenuItems = () => {
         const items = [];
@@ -70,6 +85,16 @@ export const Sider: React.FC<SiderProps> = ({ collapsed }) => {
                 icon: <UnorderedListOutlined />,
                 label: 'My Events',
                 onClick: () => router.push('/organizer/my-events'),
+            });
+        }
+
+        // Check-in menu chỉ cho staff có event
+        if (shouldShowCheckin) {
+            items.push({
+                key: '/check-in',
+                icon: <QrcodeOutlined />,
+                label: 'Check-in',
+                onClick: () => router.push('/check-in'),
             });
         }
 
