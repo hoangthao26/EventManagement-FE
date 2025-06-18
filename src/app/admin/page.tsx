@@ -106,8 +106,13 @@ export default function AdminDashboardPage() {
                     }
                 });
                 setRegistrationData(response.data);
-            } catch (error) {
-                console.error('Failed to fetch registration data:', error);
+            } catch (error: any) {
+                if (error.response && error.response.status === 404) {
+                    // Nếu không có dữ liệu, set 12 tháng đều 0
+                    setRegistrationData(Array.from({ length: 12 }, (_, i) => ({ month: i + 1, count: 0 })));
+                } else {
+                    console.error('Failed to fetch registration data:', error);
+                }
             }
         };
 
@@ -125,8 +130,13 @@ export default function AdminDashboardPage() {
                     }
                 });
                 setEventTypeData(response.data);
-            } catch (error) {
-                console.error('Failed to fetch event type distribution:', error);
+            } catch (error: any) {
+                if (error.response && error.response.status === 404) {
+                    // Nếu không có dữ liệu, set object rỗng
+                    setEventTypeData({});
+                } else {
+                    console.error('Failed to fetch event type distribution:', error);
+                }
             }
         };
 

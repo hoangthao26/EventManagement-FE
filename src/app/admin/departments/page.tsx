@@ -346,7 +346,7 @@ export default function DepartmentsPage() {
                                 <Input />
                             </Form.Item>
                             <Form.Item name="description" label="Description" rules={[{ required: true, message: 'Please input description!' }]}>
-                                <Input.TextArea rows={10} placeholder="Enter department description" />
+                                <Input.TextArea rows={10} placeholder="Enter department description" allowClear />
                             </Form.Item>
                         </Col>
                         <Col span={12}>
@@ -380,7 +380,7 @@ export default function DepartmentsPage() {
                                 <Input />
                             </Form.Item>
                             <Form.Item name="description" label="Description" rules={[{ required: true, message: 'Please input description!' }]}>
-                                <Input.TextArea rows={10} placeholder="Enter department description" />
+                                <Input.TextArea rows={10} placeholder="Enter department description" allowClear />
                             </Form.Item>
                         </Col>
                         <Col span={12}>
