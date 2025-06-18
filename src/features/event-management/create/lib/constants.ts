@@ -14,5 +14,10 @@ export const IMAGE_DIMENSIONS = {
         width: 720,
         height: 958,
         label: '(720x958)'
+    },
+    AVATAR: {
+        width: 400,
+        height: 400,
+        label: '(400x400)'
     }
 } as const; 
