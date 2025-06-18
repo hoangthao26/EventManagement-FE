@@ -173,9 +173,7 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
         try {
             setSubmitting(true);
             const eventName = values.name;
-
-            // Lấy nội dung từ TinyMCE Editor
-            const description = editorValue;
+            const description = values.description;
 
             // Upload poster
             let posterUrl = values.poster;
@@ -242,7 +240,7 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
                 };
             }
 
-            // Build payload 
+            // Build payload với thời gian local (YYYY-MM-DDTHH:mm:ss)
             const [checkinStart, checkinEnd] = values.checkinTimeRange || [];
             const payload = {
                 name: values.name,
@@ -258,13 +256,14 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
                 platform: eventMode !== 'OFFLINE' ? { name: values.platformName, url: values.platformUrl } : undefined,
                 tags: values.tags,
                 imageUrls,
-                startTime: values.timeRange[0].toISOString(),
-                endTime: values.timeRange[1].toISOString(),
-                registrationStart: values.registrationTimeRange[0].toISOString(),
-                registrationEnd: values.registrationTimeRange[1].toISOString(),
-                checkinStart,
-                checkinEnd,
+                startTime: values.timeRange[0].format('YYYY-MM-DDTHH:mm:ss'),
+                endTime: values.timeRange[1].format('YYYY-MM-DDTHH:mm:ss'),
+                registrationStart: values.registrationTimeRange[0].format('YYYY-MM-DDTHH:mm:ss'),
+                registrationEnd: values.registrationTimeRange[1].format('YYYY-MM-DDTHH:mm:ss'),
+                checkinStart: checkinStart ? checkinStart.format('YYYY-MM-DDTHH:mm:ss') : undefined,
+                checkinEnd: checkinEnd ? checkinEnd.format('YYYY-MM-DDTHH:mm:ss') : undefined,
             };
+            console.log('Create event request payload:', payload);
 
             // Gọi API tạo event
             await onSubmit({ ...payload, departmentCode: values.departmentCode });
@@ -618,27 +617,10 @@ export function CreateEventForm({ onSubmit, loading, departments, initialValues,
             )}
             <Form.Item
                 label={<b>Description</b>}
+                name="description"
                 rules={[{ required: true, message: 'Please enter event description' }]}
             >
-                <Editor
-                    apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY}
-                    value={editorValue}
-                    onEditorChange={val => setEditorValue(String(val ?? ''))}
-                    init={{
-                        height: 300,
-                        menubar: false,
-                        plugins: [
-                            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                            'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
-                        ],
-                        toolbar: 'undo redo | blocks | ' +
-                            'bold italic forecolor | alignleft aligncenter ' +
-                            'alignright alignjustify | bullist numlist outdent indent | ' +
-                            'removeformat | help',
-                        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
-                    }}
-                />
+                <Input.TextArea rows={6} maxLength={1000} placeholder="Event description" />
             </Form.Item>
             {statusMessage && (
                 <div style={{ textAlign: 'center', color: '#ff4d4f', marginBottom: 8 }}>

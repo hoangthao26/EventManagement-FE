@@ -33,7 +33,9 @@ export function UpdateEventForm({ departmentCode, eventId, departments }: Update
             try {
                 const data = await getEventDetails(departmentCode, eventId);
                 setEventData(data);
+                console.log('Event data:', data);
             } catch (error) {
+
                 console.error('Error fetching event details:', error);
                 showError('Failed to fetch event details');
             } finally {
@@ -117,10 +119,10 @@ export function UpdateEventForm({ departmentCode, eventId, departments }: Update
         city: eventData.location?.city,
         platformName: eventData.platform?.name,
         platformUrl: eventData.platform?.url,
-        timeRange: [dayjs.utc(eventData.startTime).local(), dayjs.utc(eventData.endTime).local()],
-        registrationTimeRange: [dayjs.utc(eventData.registrationStart).local(), dayjs.utc(eventData.registrationEnd).local()],
-        checkinStart: eventData.checkinStart ? dayjs.utc(eventData.checkinStart).local() : undefined,
-        checkinEnd: eventData.checkinEnd ? dayjs.utc(eventData.checkinEnd).local() : undefined,
+        timeRange: [dayjs(eventData.startTime), dayjs(eventData.endTime)],
+        registrationTimeRange: [dayjs(eventData.registrationStart), dayjs(eventData.registrationEnd)],
+        checkinStart: eventData.checkinStart ? dayjs(eventData.checkinStart) : undefined,
+        checkinEnd: eventData.checkinEnd ? dayjs(eventData.checkinEnd) : undefined,
         poster: eventData.posterUrl,
         banner: eventData.bannerUrl,
         imageUrls: eventData.images.map(img => img.url),
