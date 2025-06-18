@@ -2,19 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/features/auth/model/useAuth";
-import { useApi } from "@/lib/useApi";
 import Loading from "@/shared/ui/Loading";
-import { Card, Typography, Row, Col, Input, Select, Empty, Tag, Space, Button, notification, Modal, Descriptions } from "antd";
+import { Card, Typography, Row, Col, Input, Select, Empty, Tag, Space, Button, notification, Modal, Descriptions, Form, Radio, Rate, Checkbox } from "antd";
 import { useRouter } from "next/navigation";
-import { SearchOutlined, CalendarOutlined, EnvironmentOutlined, TeamOutlined, ClearOutlined } from "@ant-design/icons";
+import { SearchOutlined, CalendarOutlined, EnvironmentOutlined, TeamOutlined, ClearOutlined, FileTextOutlined } from "@ant-design/icons";
 import { format, parseISO } from "date-fns";
 import HomeLayout from "@/widgets/layouts/ui/HomeLayout";
 import { DatePicker } from 'antd';
 import moment from "moment";
+import axiosInstance from '@/shared/lib/axios';
 
 const { RangePicker } = DatePicker;
 const { Title, Text } = Typography;
 const { Search } = Input;
+const { TextArea } = Input;
 
 interface RegisteredEvent {
     id: number;
@@ -29,7 +30,33 @@ interface RegisteredEvent {
     registrationStatus: string;
     typeName: string;
     departmentName: string;
-    // ...other fields from eventInfo if needed
+}
+
+interface SurveyOption {
+    id: number;
+    text: string;
+    orderNum: number;
+}
+
+interface SurveyQuestion {
+    id: number;
+    question: string;
+    orderNum: number;
+    type: 'TEXT' | 'RADIO' | 'CHECKBOX' | 'DROPDOWN' | 'RATING';
+    isRequired: boolean;
+    options: SurveyOption[];
+}
+
+interface Survey {
+    id: number;
+    title: string;
+    description: string;
+    startTime: string;
+    endTime: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+    questions: SurveyQuestion[];
 }
 
 type EventMode = 'ONLINE' | 'OFFLINE' | 'HYBRID';
@@ -37,23 +64,31 @@ type EventMode = 'ONLINE' | 'OFFLINE' | 'HYBRID';
 export default function MyEventsPage() {
     const { session, status } = useAuth();
     const router = useRouter();
-    const { apiCall } = useApi();
     const [allEvents, setAllEvents] = useState<RegisteredEvent[]>([]);
     const [filteredEvents, setFiltereredEvents] = useState<RegisteredEvent[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [dateRange, setDateRange] = useState<[moment.Moment, moment.Moment] | null>(null);
     const [mode, setMode] = useState<EventMode | null>(null);
-    const [cancelledEvents, setCancelledEvents] = useState<number[]>([]);
+
+    // Cancel registration states
+    const [cancelling, setCancelling] = useState<number | null>(null);
+    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+    const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+
+    // Survey states
+    const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
+    const [surveyLoading, setSurveyLoading] = useState(false);
+    const [survey, setSurvey] = useState<Survey | null>(null);
+    const [form] = Form.useForm();
 
     useEffect(() => {
         let isSubscribed = true;
 
         const fetchRegisteredEvents = async () => {
             try {
-                const rawData = await apiCall<any[]>('/events/registered');
-                // Map eventInfo + registrationStatus into a flat object
-                const mappedData: RegisteredEvent[] = rawData.map(item => ({
+                const response = await axiosInstance.get<any[]>('/events/registered');
+                const mappedData: RegisteredEvent[] = response.data.map((item: any) => ({
                     ...item.eventInfo,
                     registrationStatus: item.registrationStatus,
                 }));
@@ -111,11 +146,8 @@ export default function MyEventsPage() {
             });
         }
 
-        // Exclude cancelled events from the list
-        result = result.filter(event => !cancelledEvents.includes(event.id));
-
         setFiltereredEvents(result);
-    }, [allEvents, searchTerm, mode, dateRange, cancelledEvents]);
+    }, [allEvents, searchTerm, mode, dateRange]);
 
     const getEventTypeTag = (type: string) => {
         const typeColors: Record<string, string> = {
@@ -148,13 +180,9 @@ export default function MyEventsPage() {
         setMode(null);
     };
 
-    const [cancelling, setCancelling] = useState<number | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
-
-    const showConfirmModal = (eventId: number) => {
+    const showCancelModal = (eventId: number) => {
         setSelectedEventId(eventId);
-        setIsModalOpen(true);
+        setIsCancelModalOpen(true);
     };
 
     const handleCancelRegistration = async () => {
@@ -162,19 +190,21 @@ export default function MyEventsPage() {
 
         try {
             setCancelling(selectedEventId);
-            await apiCall(`/registrations/${selectedEventId}`, {
-                method: 'DELETE'
-            });
+            await axiosInstance.delete(`/registrations/${selectedEventId}`);
 
             notification.success({
                 message: 'Success',
                 description: 'Successfully cancelled registration'
             });
 
-            // Mark this event as cancelled
-            setCancelledEvents(prev => [...prev, selectedEventId]);
+            // Update the event's registration status in the local state
+            setAllEvents(prev => prev.map(event => 
+                event.id === selectedEventId 
+                    ? { ...event, registrationStatus: 'CANCELED' }
+                    : event
+            ));
 
-            setIsModalOpen(false);
+            setIsCancelModalOpen(false);
         } catch (error) {
             notification.error({
                 message: 'Error',
@@ -183,6 +213,206 @@ export default function MyEventsPage() {
         } finally {
             setCancelling(null);
             setSelectedEventId(null);
+        }
+    };
+
+    const showSurveyModal = async (eventId: number) => {
+        setSelectedEventId(eventId);
+        setSurveyLoading(true);
+        setIsSurveyModalOpen(true);
+
+        try {
+            const response = await axiosInstance.get<Survey>(`/surveys/events/${eventId}/survey`);
+            setSurvey(response.data);
+        } catch (error) {
+            notification.error({
+                message: 'Error',
+                description: 'Failed to fetch survey'
+            });
+            setIsSurveyModalOpen(false);
+        } finally {
+            setSurveyLoading(false);
+        }
+    };    const handleSurveySubmit = async () => {
+        if (!survey || !selectedEventId) return;
+
+        try {
+            const formValues = form.getFieldsValue();
+            
+            // Format answers for submission
+            const answers = survey.questions.map(question => {
+                const fieldName = `question_${question.id}`;
+                const value = formValues[fieldName];
+                
+                // Format based on question type
+                let formattedValue;
+                switch (question.type) {
+                    case 'TEXT':
+                        formattedValue = value || '';
+                        break;
+                    case 'RADIO':
+                    case 'DROPDOWN':
+                        formattedValue = value ? [value] : [];
+                        break;
+                    case 'CHECKBOX':
+                        formattedValue = Array.isArray(value) ? value : [];
+                        break;
+                    case 'RATING':
+                        formattedValue = value ? value.toString() : '';
+                        break;
+                    default:
+                        formattedValue = value || '';
+                }
+                
+                return {
+                    questionId: question.id,
+                    selectedOptionIds: question.type === 'TEXT' || question.type === 'RATING' ? [] : formattedValue,
+                    textAnswer: question.type === 'TEXT' || question.type === 'RATING' ? formattedValue : ''
+                };
+            });
+
+            await axiosInstance.post(`/surveys/${survey.id}/submit`, {
+                answers: answers
+            });
+
+            notification.success({
+                message: 'Success',
+                description: 'Survey submitted successfully'
+            });
+            setIsSurveyModalOpen(false);
+            form.resetFields();
+            setSurvey(null);
+            setSelectedEventId(null);
+        } catch (error) {
+            notification.error({
+                message: 'Error',
+                description: 'Failed to submit survey'
+            });
+        }
+    };const renderSurveyQuestion = (question: SurveyQuestion) => {
+        switch (question.type) {
+            case 'TEXT':
+                return (
+                    <Form.Item
+                        key={question.id}
+                        name={`question_${question.id}`}
+                        label={question.question}
+                        rules={[{ required: question.isRequired, message: 'This field is required' }]}
+                    >
+                        <TextArea rows={3} placeholder="Enter your answer..." />
+                    </Form.Item>
+                );
+            
+            case 'RADIO':
+                return (
+                    <Form.Item
+                        key={question.id}
+                        name={`question_${question.id}`}
+                        label={question.question}
+                        rules={[{ required: question.isRequired, message: 'This field is required' }]}
+                    >
+                        <Radio.Group>
+                            <Space direction="vertical">
+                                {question.options.map(option => (
+                                    <Radio key={option.id} value={option.id}>
+                                        {option.text}
+                                    </Radio>
+                                ))}
+                            </Space>
+                        </Radio.Group>
+                    </Form.Item>
+                );
+            
+            case 'CHECKBOX':
+                return (
+                    <Form.Item
+                        key={question.id}
+                        name={`question_${question.id}`}
+                        label={question.question}
+                        rules={[{ required: question.isRequired, message: 'This field is required' }]}
+                    >
+                        <Checkbox.Group>
+                            <Space direction="vertical">
+                                {question.options.map(option => (
+                                    <Checkbox key={option.id} value={option.id}>
+                                        {option.text}
+                                    </Checkbox>
+                                ))}
+                            </Space>
+                        </Checkbox.Group>
+                    </Form.Item>
+                );
+            
+            case 'DROPDOWN':
+                return (
+                    <Form.Item
+                        key={question.id}
+                        name={`question_${question.id}`}
+                        label={question.question}
+                        rules={[{ required: question.isRequired, message: 'This field is required' }]}
+                    >
+                        <Select placeholder="Please select an option">
+                            {question.options.map(option => (
+                                <Select.Option key={option.id} value={option.id}>
+                                    {option.text}
+                                </Select.Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
+                );
+            
+            case 'RATING':
+                return (
+                    <Form.Item
+                        key={question.id}
+                        name={`question_${question.id}`}
+                        label={question.question}
+                        rules={[{ required: question.isRequired, message: 'This field is required' }]}
+                    >
+                        <Rate allowHalf />
+                    </Form.Item>
+                );
+            
+            default:
+                return null;
+        }
+    };
+
+    const getActionButton = (event: RegisteredEvent) => {
+        if (event.registrationStatus === "ATTENDED") {
+            return (
+                <Button
+                    type="default"
+                    block
+                    icon={<FileTextOutlined />}
+                    onClick={() => showSurveyModal(event.id)}
+                >
+                    Làm khảo sát
+                </Button>
+            );
+        } else if (event.registrationStatus === "CANCELED") {
+            return (
+                <Button
+                    type="default"
+                    danger
+                    block
+                    disabled
+                >
+                    Đã hủy
+                </Button>
+            );
+        } else {
+            return (
+                <Button
+                    type="default"
+                    danger
+                    block
+                    loading={cancelling === event.id}
+                    onClick={() => showCancelModal(event.id)}
+                >
+                    Hủy đăng ký
+                </Button>
+            );
         }
     };
 
@@ -208,6 +438,57 @@ export default function MyEventsPage() {
                         </Title>
                     </Space>
                 </div>
+
+                <Card style={{ marginBottom: 24 }}>
+                    <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                        <Row gutter={[16, 16]} justify="center">
+                            <Col span={16}>
+                                <Search
+                                    placeholder="Tìm kiếm sự kiện..."
+                                    allowClear
+                                    enterButton
+                                    size="large"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </Col>
+                        </Row>
+                        <Row gutter={[16, 16]} justify="center">
+                            <Col>
+                                <Select
+                                    style={{ width: 200 }}
+                                    placeholder="Hình thức"
+                                    allowClear
+                                    value={mode}
+                                    onChange={setMode}
+                                    options={[
+                                        { value: null, label: 'Tất cả' },
+                                        { value: 'ONLINE', label: 'Trực tuyến' },
+                                        { value: 'OFFLINE', label: 'Trực tiếp' },
+                                        { value: 'HYBRID', label: 'Kết hợp' }
+                                    ]}
+                                />
+                            </Col>
+                            <Col>
+                                <RangePicker
+                                    value={dateRange}
+                                    onChange={(dates) => setDateRange(dates)}
+                                    disabledDate={(current) => {
+                                        return current && current < moment().startOf('day');
+                                    }}
+                                />
+                            </Col>
+                            <Col>
+                                <Button 
+                                    icon={<ClearOutlined />}
+                                    onClick={resetFilters}
+                                >
+                                    Xóa bộ lọc
+                                </Button>
+                            </Col>
+                        </Row>
+                    </Space>
+                </Card>
 
                 {filteredEvents.length > 0 ? (
                     <Row gutter={[16, 16]}>
@@ -249,23 +530,16 @@ export default function MyEventsPage() {
                                             </Text>
                                         </Space>
 
-                                        <Button
-                                            type="primary"
-                                            block
-                                            onClick={() => router.push(`/events/${event.id}`)}
-                                        >
-                                            Xem chi tiết
-                                        </Button>
-                                        <Button
-                                            type="default"
-                                            danger
-                                            block
-                                            loading={cancelling === event.id}
-                                            disabled={event.registrationStatus === "CANCELED"}
-                                            onClick={() => showConfirmModal(event.id)}
-                                        >
-                                            {event.registrationStatus === "CANCELED" ? "Đã hủy" : "Hủy đăng ký"}
-                                        </Button>
+                                        <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                                            <Button
+                                                type="primary"
+                                                block
+                                                onClick={() => router.push(`/events/${event.id}`)}
+                                            >
+                                                Xem chi tiết
+                                            </Button>
+                                            {getActionButton(event)}
+                                        </Space>
                                     </Space>
                                 </Card>
                             </Col>
@@ -278,12 +552,13 @@ export default function MyEventsPage() {
                     />
                 )}
 
+                {/* Cancel Registration Modal */}
                 <Modal
                     title="Xác nhận hủy đăng ký"
-                    open={isModalOpen}
+                    open={isCancelModalOpen}
                     onOk={handleCancelRegistration}
                     onCancel={() => {
-                        setIsModalOpen(false);
+                        setIsCancelModalOpen(false);
                         setSelectedEventId(null);
                     }}
                     confirmLoading={cancelling !== null}
@@ -310,10 +585,63 @@ export default function MyEventsPage() {
                                 <Text>
                                     Bạn có chắc chắn muốn hủy đăng ký sự kiện này không?
                                 </Text>
-
                             </>
                         )}
                     </Space>
+                </Modal>
+
+                {/* Survey Modal */}
+                <Modal
+                    title="Khảo sát sự kiện"
+                    open={isSurveyModalOpen}
+                    onCancel={() => {
+                        setIsSurveyModalOpen(false);
+                        setSelectedEventId(null);
+                        setSurvey(null);
+                        form.resetFields();
+                    }}
+                    footer={[
+                        <Button key="cancel" onClick={() => {
+                            setIsSurveyModalOpen(false);
+                            setSelectedEventId(null);
+                            setSurvey(null);
+                            form.resetFields();
+                        }}>
+                            Hủy
+                        </Button>,                        <Button key="submit" type="primary" onClick={() => {
+                            form.validateFields()
+                                .then(() => {
+                                    handleSurveySubmit();
+                                })
+                                .catch(() => {
+                                    notification.warning({
+                                        message: 'Validation Error',
+                                        description: 'Please fill in all required fields'
+                                    });
+                                });
+                        }}>
+                            Gửi khảo sát
+                        </Button>
+                    ]}
+                    width={800}
+                >
+                    {surveyLoading ? (
+                        <Loading />
+                    ) : survey ? (
+                        <div>
+                            <Title level={4}>{survey.title}</Title>
+                            <Text type="secondary">{survey.description}</Text>
+                            <Form
+                                form={form}
+                                layout="vertical"
+                                style={{ marginTop: 24 }}
+                            >
+                                {survey.questions
+                                    .sort((a, b) => a.orderNum - b.orderNum)
+                                    .map(question => renderSurveyQuestion(question))}
+                            </Form>
+                        </div>
+                    ) : null}
                 </Modal>
             </div>
         </HomeLayout>

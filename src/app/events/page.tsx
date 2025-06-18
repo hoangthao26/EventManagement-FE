@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/features/auth/model/useAuth";
-import { useApi } from "@/lib/useApi";
 import Loading from "@/shared/ui/Loading";
 import { Card, Typography, Row, Col, Input, Select, Empty, Tag, Space, Button, notification } from "antd";
 import { useRouter } from "next/navigation";
@@ -11,6 +10,7 @@ import { format, parseISO } from "date-fns";
 import HomeLayout from "@/widgets/layouts/ui/HomeLayout";
 import { DatePicker } from 'antd';
 import moment from "moment";
+import axiosInstance from '@/shared/lib/axios';
 
 const { RangePicker } = DatePicker;
 const { Title, Paragraph, Text } = Typography;
@@ -63,7 +63,6 @@ type EventMode = 'ONLINE' | 'OFFLINE' | 'HYBRID';
 export default function EventsPage() {
     const { session, status } = useAuth();
     const router = useRouter();
-    const { apiCall } = useApi();
     const [allEvents, setAllEvents] = useState<Event[]>([]); // Store all events
     const [filteredEvents, setFilteredEvents] = useState<Event[]>([]); // Store filtered events
     const [loading, setLoading] = useState(true);
@@ -81,23 +80,21 @@ export default function EventsPage() {
 
     // Fetch all data on component mount
     useEffect(() => {
-        let isSubscribed = true;
-
-        const fetchData = async () => {
+        let isSubscribed = true;        const fetchData = async () => {
             try {
-                const [events, types, activeTags, deps] = await Promise.all([
-                    apiCall<Event[]>('/events'),
-                    apiCall<EventType[]>('/event-types'),
-                    apiCall<Tag[]>('/tags/active'),
-                    apiCall<Department[]>('/departments'),
+                const [eventsRes, typesRes, tagsRes, depsRes] = await Promise.all([
+                    axiosInstance.get<Event[]>('/events'),
+                    axiosInstance.get<EventType[]>('/event-types'),
+                    axiosInstance.get<Tag[]>('/tags/active'),
+                    axiosInstance.get<Department[]>('/departments'),
                 ]);
                 
                 if (isSubscribed) {
-                    setAllEvents(events);
-                    setFilteredEvents(events);
-                    setEventTypes(types);
-                    setTags(activeTags);
-                    setDepartments(deps);
+                    setAllEvents(eventsRes.data);
+                    setFilteredEvents(eventsRes.data);
+                    setEventTypes(typesRes.data);
+                    setTags(tagsRes.data);
+                    setDepartments(depsRes.data);
                     setLoading(false);
                 }
             } catch (error) {

@@ -4,8 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { Row, Col, Typography, Button, Card, Space } from 'antd';
 import { CheckCircleOutlined, CalendarOutlined } from '@ant-design/icons';
 import Link from 'next/link';
-import { useApi } from '@/lib/useApi';
 import { format, parseISO } from 'date-fns';
+import axiosInstance from '@/shared/lib/axios';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -17,15 +17,13 @@ interface Event {
 }
 
 const CTASection: React.FC = () => {
-  const { apiCall } = useApi();
   const [upcomingEvent, setUpcomingEvent] = useState<Event | null>(null);
-
   useEffect(() => {
     const fetchUpcomingEvent = async () => {
       try {
-        const events = await apiCall<Event[]>('/events');
-        if (events && events.length > 0) {
-          setUpcomingEvent(events[0]);
+        const response = await axiosInstance.get<Event[]>('/events');
+        if (response.data && response.data.length > 0) {
+          setUpcomingEvent(response.data[0]);
         }
       } catch (error) {
         console.error('Failed to fetch upcoming event:', error);

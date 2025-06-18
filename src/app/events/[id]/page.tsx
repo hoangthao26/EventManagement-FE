@@ -7,8 +7,8 @@ import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import Loading from '@/shared/ui/Loading';
 import { useAuth } from '@/features/auth/model/useAuth';
-import { useApi } from '@/lib/useApi';
 import HomeLayout from "@/widgets/layouts/ui/HomeLayout";
+import axiosInstance from '@/shared/lib/axios';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -66,7 +66,6 @@ interface RegistrationRequest {
 export default function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
     const { session, status } = useAuth();
-    const { apiCall, loading: apiLoading } = useApi();
     const [event, setEvent] = useState<EventDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [registering, setRegistering] = useState(false);
@@ -83,12 +82,10 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     }, [params]);
 
     useEffect(() => {
-        if (!eventId) return;
-
-        const fetchEventDetail = async () => {
+        if (!eventId) return;        const fetchEventDetail = async () => {
             try {
-                const data = await apiCall<EventDetail>(`/events/${eventId}`);
-                setEvent(data);
+                const response = await axiosInstance.get<EventDetail>(`/events/${eventId}`);
+                setEvent(response.data);
             } catch (error) {
                 notification.error({
                     message: 'Error',
@@ -114,16 +111,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 name: session.user.name || '',
                 eventId: event.id,
                 checkinUrl: ''
-            };
-
-            // Call registration API
-            await apiCall('/registrations', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(registrationData),
-            });
+            };            // Call registration API
+            await axiosInstance.post('/registrations', registrationData);
 
             notification.success({
                 message: 'Success',
@@ -131,8 +120,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             });
 
             // Refresh event data
-            const data = await apiCall<EventDetail>(`/events/${eventId}`);
-            setEvent(data);
+            const response = await axiosInstance.get<EventDetail>(`/events/${eventId}`);
+            setEvent(response.data);
             setIsModalOpen(false);
         } catch (error) {
             console.error('Registration error:', error);
@@ -148,9 +137,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     const showConfirmModal = () => {
         if (!event) return;
         setIsModalOpen(true);
-    };
-
-    const getRegistrationButtonProps = (status: string | null, isRegistering: boolean, isOpen: boolean) => {
+    };    const getRegistrationButtonProps = (status: string | null, isRegistering: boolean, isOpen: boolean) => {
         if (!isOpen) {
             return {
                 disabled: true,
@@ -164,11 +151,16 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                     icon: <CheckCircleOutlined />,
                     children: 'Đã đăng ký'
                 };
-
-            case 'CANCELLED':
+            case 'CANCELED':
                 return {
                     disabled: true,
-
+                    children: 'Đã hủy đăng ký'
+                };
+            case 'ATTENDED':
+                return {
+                    disabled: true,
+                    icon: <CheckCircleOutlined />,
+                    children: 'Đã tham gia'
                 };
             default:
                 return {
