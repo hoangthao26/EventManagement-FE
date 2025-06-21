@@ -5,6 +5,7 @@ import { useAuth } from "@/features/auth/model/useAuth";
 import CTASection from "@/components/home/CTASection";
 import EventCarousel from "@/components/home/EventCarousel";
 import StatisticsSection from "@/components/home/StatisticsSection";
+import UpcomingSection from "@/components/home/UpcomingSection";
 import HomeLayout from "@/widgets/layouts/ui/HomeLayout";
 import Loading from "@/shared/ui/Loading";
 import { Card, Typography, Row, Col, Button } from "antd";
@@ -49,6 +50,7 @@ export default function HomePage() {
       <div style={{ width: '100%', margin: 0, padding: 0 }}>
         <EventCarousel />
       </div>
+      <UpcomingSection />
 
       {/* Statistics section - let the component handle its own container */}
       <StatisticsSection />

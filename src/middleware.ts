@@ -7,6 +7,12 @@ import { jwtDecode } from 'jwt-decode';
 export async function middleware(request: NextRequest) {
     const token = await getToken({ req: request });
     const isAuthPage = request.nextUrl.pathname.startsWith('/login');
+    const isPublicPath = request.nextUrl.pathname.match(/^\/($|events$|events\/[^\/]+$|departments$|about$)/);
+
+    // Allow public paths without authentication
+    if (isPublicPath) {
+        return NextResponse.next();
+    }
 
     // Check if token is expired
     const isTokenExpired = (token: any): boolean => {
