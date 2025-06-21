@@ -77,7 +77,7 @@ const CTASection: React.FC = () => {
                 marginBottom: 24
               }}>
                 <CalendarOutlined style={{ fontSize: 24, color: '#ff8533', marginRight: 8 }} />
-                <Title level={3} style={{ margin: 0 }}>Sự kiện sắp tới</Title>
+                <Title level={3} style={{ margin: 0 }}>Sự kiện nổi bật</Title>
               </div>
               
               <Space direction="vertical" style={{ width: '100%' }} size="middle">

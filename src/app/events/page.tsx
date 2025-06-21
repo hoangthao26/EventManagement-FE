@@ -59,6 +59,7 @@ interface Event {
 
 
 type EventMode = 'ONLINE' | 'OFFLINE' | 'HYBRID';
+type Audience = 'STUDENT' | 'LECTURER' | 'BOTH';
 
 export default function EventsPage() {
     const { session, status } = useAuth();
@@ -72,6 +73,7 @@ export default function EventsPage() {
     const [selectedDepartment, setSelectedDepartment] = useState<number | null>(null);  // Change this
     const [dateRange, setDateRange] = useState<[moment.Moment, moment.Moment] | null>(null);
     const [mode, setMode] = useState<EventMode | null>(null);  // Change this
+    const [audience, setAudience] = useState<Audience>('STUDENT');  // Default to STUDENT
 
     // State for dropdown options
     const [eventTypes, setEventTypes] = useState<EventType[]>([]);
@@ -147,6 +149,13 @@ export default function EventsPage() {
             result = result.filter(event => event.mode === mode);
         }
 
+        // Filter by audience
+        if (audience !== 'BOTH') {
+            result = result.filter(event => 
+                event.audience === audience || event.audience === 'BOTH'
+            );
+        }
+
         // Filter by date range
         if (dateRange && dateRange[0] && dateRange[1]) {  // Add null check for date range
             const [start, end] = dateRange;
@@ -157,7 +166,7 @@ export default function EventsPage() {
         }
 
         setFilteredEvents(result);
-    }, [allEvents, searchTerm, selectedType, selectedTags, selectedDepartment, mode, dateRange, eventTypes, departments]);
+    }, [allEvents, searchTerm, selectedType, selectedTags, selectedDepartment, mode, audience, dateRange, eventTypes, departments]);
 
     const getEventTypeTag = (type: string) => {
         const typeColors: Record<string, string> = {
@@ -183,6 +192,7 @@ export default function EventsPage() {
         setSelectedDepartment(null);
         setDateRange(null);
         setMode(null);
+        setAudience('STUDENT');  // Add this line
     };
 
     if (loading) {
@@ -210,8 +220,8 @@ export default function EventsPage() {
 
                 <Card style={{ marginBottom: 24 }}>
                     <Space direction="vertical" style={{ width: '100%' }} size="middle">
-                        <Row gutter={[16, 16]} justify="center">
-                            <Col span={16}>
+                        <Row gutter={[16, 16]} justify="center" align="middle">
+                            <Col flex="1">
                                 <Search
                                     placeholder="Tìm kiếm sự kiện..."
                                     allowClear
@@ -220,6 +230,15 @@ export default function EventsPage() {
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
+                            </Col>
+                            <Col>
+                                <Button
+                                    icon={<ClearOutlined />}
+                                    onClick={resetFilters}
+                                    size="large"
+                                >
+                                    Xóa bộ lọc
+                                </Button>
                             </Col>
                         </Row>
                         <Row gutter={[16, 16]} justify="center">
@@ -261,7 +280,7 @@ export default function EventsPage() {
                                     value={selectedDepartment}
                                     onChange={setSelectedDepartment}
                                     options={[
-                                        { value: null, label: 'Tất cả' },  // Change undefined to null
+                                        { value: null, label: 'Tất cả' },
                                         ...departments.map(dept => ({
                                             value: dept.id,
                                             label: dept.name
@@ -277,10 +296,23 @@ export default function EventsPage() {
                                     value={mode}
                                     onChange={setMode}
                                     options={[
-                                        { value: null, label: 'Tất cả' },  // Change undefined to null
+                                        { value: null, label: 'Tất cả' },
                                         { value: 'ONLINE', label: 'Trực tuyến' },
                                         { value: 'OFFLINE', label: 'Trực tiếp' },
                                         { value: 'HYBRID', label: 'Kết hợp' }
+                                    ]}
+                                />
+                            </Col>
+                            <Col>
+                                <Select
+                                    style={{ width: 200 }}
+                                    placeholder="Đối tượng"
+                                    value={audience}
+                                    onChange={setAudience}
+                                    options={[
+                                        { value: 'STUDENT', label: 'Sinh viên' },
+                                        { value: 'LECTURER', label: 'Giảng viên' },
+                                        { value: 'BOTH', label: 'Tất cả' }
                                     ]}
                                 />
                             </Col>
@@ -289,18 +321,9 @@ export default function EventsPage() {
                                     value={dateRange}
                                     onChange={(dates) => setDateRange(dates)}
                                     disabledDate={(current) => {
-                                        // Can't select days before today
                                         return current && current < moment().startOf('day');
                                     }}
                                 />
-                            </Col>
-                            <Col>
-                                <Button
-                                    icon={<ClearOutlined />}
-                                    onClick={resetFilters}
-                                >
-                                    Xóa bộ lọc
-                                </Button>
                             </Col>
                         </Row>
                     </Space>
