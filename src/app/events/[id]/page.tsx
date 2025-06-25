@@ -296,20 +296,6 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                                             value={event.registeredCount}
                                             suffix={`/ ${event.maxCapacity}`}
                                         />
-                                        {event.audience === 'BOTH' && (
-                                            <>
-                                                <Statistic
-                                                    title="Students Registered"
-                                                    value={event.registeredCountStudent}
-                                                    suffix={`/ ${event.maxCapacityStudent}`}
-                                                />
-                                                <Statistic
-                                                    title="Lecturers Registered"
-                                                    value={event.registeredCountLecturer}
-                                                    suffix={`/ ${event.maxCapacityLecturer}`}
-                                                />
-                                            </>
-                                        )}
                                     </Space>
 
                                     {/* Update the register button to show modal */}
