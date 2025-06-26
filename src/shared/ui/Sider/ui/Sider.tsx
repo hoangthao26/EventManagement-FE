@@ -15,6 +15,7 @@ import {
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/features/auth/model/useAuth';
 import { getStaffEvents } from '@/features/check-in/model/api';
+import { TagOutlined } from '@ant-design/icons';
 
 const { Sider: AntSider } = Layout;
 
@@ -43,8 +44,8 @@ export const Sider: React.FC<SiderProps> = ({ collapsed }) => {
     const getMenuItems = () => {
         const items = [];
 
-        // Dashboard chỉ hiển thị cho ADMIN và LECTURER
-        if (hasRole('ADMIN') || hasRole('LECTURER')) {
+        // Dashboard chỉ hiển thị cho ADMIN
+        if (hasRole('ADMIN')) {
             items.push({
                 key: '/admin',
                 icon: <DashboardOutlined />,
@@ -55,7 +56,13 @@ export const Sider: React.FC<SiderProps> = ({ collapsed }) => {
                 key: '/departments',
                 icon: <TeamOutlined />,
                 label: 'Departments',
-                onClick: () => router.push('/departments'),
+                onClick: () => router.push('/admin/departments'),
+            },
+            {
+                key: '/admin/tags',
+                icon: <TagOutlined />,
+                label: 'Tags',
+                onClick: () => router.push('/admin/tags'),
             }
         );
         }

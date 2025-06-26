@@ -9,6 +9,8 @@ import Loading from "@/shared/ui/Loading";
 import { useSession } from "next-auth/react";
 import { SearchOutlined } from "@ant-design/icons";
 import { useAntdMessage } from "@/shared/lib/hooks/useAntdMessage";
+import { Popconfirm } from "antd";
+import { QuestionCircleOutlined } from "@ant-design/icons";
 
 interface TagType {
     id: number;
@@ -112,7 +114,17 @@ export default function TagsPage() {
             render: (_: any, record: TagType) => (
                 <div>
                     <Button type="link" onClick={() => handleEdit(record)}>Edit</Button>
-                    <Button type="link" danger onClick={() => handleDisable(record)}>Delete</Button>
+                    <Popconfirm
+                        title="Delete tag"
+                        description={`Are you sure to delete ${record.name}?`}
+                        onConfirm={() => handleDisable(record)}
+                        okText="Yes"
+                        cancelText="No"
+                        placement="left"
+                        icon={<QuestionCircleOutlined style={{ color: 'red' }} />}
+                    >
+                        <Button type="link" danger>Delete</Button>
+                    </Popconfirm>
                 </div>
             )
         }
