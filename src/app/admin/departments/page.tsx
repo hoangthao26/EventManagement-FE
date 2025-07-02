@@ -23,12 +23,14 @@ interface DepartmentUserType {
     userId: number;
     userName: string;
     roleName: string;
+    email: string;
 }
 
 // Add interface for unassigned user type
 interface UnassignedUserType {
     userId: number;
     userName: string;
+    email: string;
 }
 
 export default function DepartmentsPage() {
@@ -44,6 +46,10 @@ export default function DepartmentsPage() {
     const [editingDepartment, setEditingDepartment] = useState<any>(null);
     const [searchText, setSearchText] = useState('');
     const [searchedColumn, setSearchedColumn] = useState('');
+    const [memberSearchText, setMemberSearchText] = useState('');
+    const [memberSearchedColumn, setMemberSearchedColumn] = useState('');
+    const [unassignedSearchText, setUnassignedSearchText] = useState('');
+    const [unassignedSearchedColumn, setUnassignedSearchedColumn] = useState('');
     const [detailLoading, setDetailLoading] = useState(false);
     const [selectedDepartment, setSelectedDepartment] = useState<any>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -72,6 +78,32 @@ export default function DepartmentsPage() {
         clearFilters();
         setSearchText('');
         setSearchedColumn('');
+        confirm();
+    };
+
+    const handleMemberSearch = (selectedKeys: string[], confirm: () => void, dataIndex: string) => {
+        confirm();
+        setMemberSearchText(selectedKeys[0]);
+        setMemberSearchedColumn(dataIndex);
+    };
+
+    const handleMemberReset = (clearFilters: () => void, confirm: () => void) => {
+        clearFilters();
+        setMemberSearchText('');
+        setMemberSearchedColumn('');
+        confirm();
+    };
+
+    const handleUnassignedSearch = (selectedKeys: string[], confirm: () => void, dataIndex: string) => {
+        confirm();
+        setUnassignedSearchText(selectedKeys[0]);
+        setUnassignedSearchedColumn(dataIndex);
+    };
+
+    const handleUnassignedReset = (clearFilters: () => void, confirm: () => void) => {
+        clearFilters();
+        setUnassignedSearchText('');
+        setUnassignedSearchedColumn('');
         confirm();
     };
 
@@ -119,6 +151,98 @@ export default function DepartmentsPage() {
             return record[dataIndex].toString().toLowerCase().includes(value.toLowerCase());
         },
         filteredValue: searchedColumn === dataIndex ? [searchText] : null,
+    });
+
+    const getMemberColumnSearchProps = (dataIndex: string) => ({
+        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
+            <div style={{ padding: 8 }}>
+                <Input
+                    placeholder={`Search ${dataIndex}`}
+                    value={selectedKeys[0]}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+                    onPressEnter={() => handleMemberSearch(selectedKeys as string[], confirm, dataIndex)}
+                    style={{ marginBottom: 8, display: 'block' }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Button
+                        type="primary"
+                        onClick={() => handleMemberSearch(selectedKeys as string[], confirm, dataIndex)}
+                        size="small"
+                        style={{ width: 90 }}
+                    >
+                        Search
+                    </Button>
+                    <Button
+                        onClick={() => handleMemberReset(clearFilters, confirm)}
+                        size="small"
+                        style={{ width: 90 }}
+                    >
+                        Reset
+                    </Button>
+                </div>
+            </div>
+        ),
+        filterIcon: (filtered: boolean) => (
+            <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
+        ),
+        onFilter: (value: string, record: any) => {
+            if (!value || value.trim() === '') {
+                return true;
+            }
+            
+            if (!record[dataIndex]) {
+                return false;
+            }
+
+            return record[dataIndex].toString().toLowerCase().includes(value.toLowerCase());
+        },
+        filteredValue: memberSearchedColumn === dataIndex ? [memberSearchText] : null,
+    });
+
+    const getUnassignedColumnSearchProps = (dataIndex: string) => ({
+        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
+            <div style={{ padding: 8 }}>
+                <Input
+                    placeholder={`Search ${dataIndex}`}
+                    value={selectedKeys[0]}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+                    onPressEnter={() => handleUnassignedSearch(selectedKeys as string[], confirm, dataIndex)}
+                    style={{ marginBottom: 8, display: 'block' }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Button
+                        type="primary"
+                        onClick={() => handleUnassignedSearch(selectedKeys as string[], confirm, dataIndex)}
+                        size="small"
+                        style={{ width: 90 }}
+                    >
+                        Search
+                    </Button>
+                    <Button
+                        onClick={() => handleUnassignedReset(clearFilters, confirm)}
+                        size="small"
+                        style={{ width: 90 }}
+                    >
+                        Reset
+                    </Button>
+                </div>
+            </div>
+        ),
+        filterIcon: (filtered: boolean) => (
+            <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
+        ),
+        onFilter: (value: string, record: any) => {
+            if (!value || value.trim() === '') {
+                return true;
+            }
+            
+            if (!record[dataIndex]) {
+                return false;
+            }
+
+            return record[dataIndex].toString().toLowerCase().includes(value.toLowerCase());
+        },
+        filteredValue: unassignedSearchedColumn === dataIndex ? [unassignedSearchText] : null,
     });
 
     const fetchData = async () => {
@@ -201,7 +325,7 @@ export default function DepartmentsPage() {
             showSuccess("Department created successfully!");
             setModalCreate(false);
             form.resetFields();
-            fetchData();
+            fetchData();  
         } catch (err: any) {
             console.error("Failed to create department:", err);
             showError(err.response?.data?.message || "Failed to create department");
@@ -518,14 +642,16 @@ export default function DepartmentsPage() {
 
     const memberColumns = [
         {
-            title: 'User ID',
-            dataIndex: 'userId',
-            key: 'userId',
+            title: 'Email',
+            dataIndex: 'email',
+            key: 'email',
+            ...getMemberColumnSearchProps('email'),
         },
         {
             title: 'User Name',
             dataIndex: 'userName',
             key: 'userName',
+            ...getMemberColumnSearchProps('userName'),
         },
         {
             title: 'Role',
@@ -557,14 +683,16 @@ export default function DepartmentsPage() {
     ];
     const unassignedUserColumns = [
         {
-            title: 'User ID',
-            dataIndex: 'userId',
-            key: 'userId',
+            title: 'Email',
+            dataIndex: 'email',
+            key: 'email',
+            ...getUnassignedColumnSearchProps('email'),
         },
         {
             title: 'User Name',
             dataIndex: 'userName',
             key: 'userName',
+            ...getUnassignedColumnSearchProps('userName'),
         },
         {
             title: '',
@@ -746,12 +874,22 @@ export default function DepartmentsPage() {
                     setIsDetailModalOpen(false);
                     setSelectedDepartment(null);
                     setDepartmentMembers([]);
+                    // Clear search states when closing the modal
+                    setMemberSearchText('');
+                    setMemberSearchedColumn('');
+                    setUnassignedSearchText('');
+                    setUnassignedSearchedColumn('');
                 }}
                 footer={[
                     <Button key="close" onClick={() => {
                         setIsDetailModalOpen(false);
                         setSelectedDepartment(null);
                         setDepartmentMembers([]);
+                        // Clear search states when closing the modal
+                        setMemberSearchText('');
+                        setMemberSearchedColumn('');
+                        setUnassignedSearchText('');
+                        setUnassignedSearchedColumn('');
                     }}>
                         Close
                     </Button>
@@ -773,6 +911,9 @@ export default function DepartmentsPage() {
                     setEditRoleModalOpen(false);
                     setSelectedUser(null);
                     roleForm.resetFields();
+                    // Clear member search when closing the modal
+                    setMemberSearchText('');
+                    setMemberSearchedColumn('');
                 }}
                 onOk={updateUserRole}
                 confirmLoading={loading}
@@ -800,6 +941,9 @@ export default function DepartmentsPage() {
                 onCancel={() => {
                     setAddMemberModalOpen(false);
                     setSelectedUnassignedUser(null);
+                    // Clear unassigned users search when closing the modal
+                    setUnassignedSearchText('');
+                    setUnassignedSearchedColumn('');
                 }}
                 onOk={submitAddMember}
                 confirmLoading={loading}
