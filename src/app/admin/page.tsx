@@ -106,8 +106,13 @@ export default function AdminDashboardPage() {
                     }
                 });
                 setRegistrationData(response.data);
-            } catch (error) {
-                console.error('Failed to fetch registration data:', error);
+            } catch (error: any) {
+                if (error.response && error.response.status === 404) {
+                    // Nếu không có dữ liệu, set 12 tháng đều 0
+                    setRegistrationData(Array.from({ length: 12 }, (_, i) => ({ month: i + 1, count: 0 })));
+                } else {
+                    console.error('Failed to fetch registration data:', error);
+                }
             }
         };
 
@@ -125,8 +130,13 @@ export default function AdminDashboardPage() {
                     }
                 });
                 setEventTypeData(response.data);
-            } catch (error) {
-                console.error('Failed to fetch event type distribution:', error);
+            } catch (error: any) {
+                if (error.response && error.response.status === 404) {
+                    // Nếu không có dữ liệu, set object rỗng
+                    setEventTypeData({});
+                } else {
+                    console.error('Failed to fetch event type distribution:', error);
+                }
             }
         };
 
@@ -185,33 +195,6 @@ export default function AdminDashboardPage() {
             },
         ],
     };
-    const columns = [
-        {
-            title: 'Event Name',
-            dataIndex: 'name',
-            key: 'name',
-        },
-        {
-            title: 'Date',
-            dataIndex: 'date',
-            key: 'date',
-        },
-        {
-            title: 'Registrations',
-            dataIndex: 'registrations',
-            key: 'registrations',
-        },
-        {
-            title: 'Status',
-            dataIndex: 'status',
-            key: 'status',
-            render: (status: string) => (
-                <span style={{ color: status === 'Active' ? '#52c41a' : '#1890ff' }}>
-                    {status}
-                </span>
-            ),
-        },
-    ];
 
     return (
         <DashboardLayout>
@@ -266,7 +249,7 @@ export default function AdminDashboardPage() {
                             </Card>
 
                         </Col>
-                        <Col xs={24} sm={12} md={8}>
+                        {/* <Col xs={24} sm={12} md={8}>
                             <Card>
                                 <Statistic
                                     title="Upcoming Events"
@@ -274,7 +257,7 @@ export default function AdminDashboardPage() {
                                     prefix={<ScheduleOutlined />}
                                 />
                             </Card>
-                        </Col>
+                        </Col> */}
                     </Row>
                     <Row gutter={[16, 16]} className="mb-6" justify="center" style={{ marginTop: '10px' }}>
                         <Col xs={24} sm={12} md={8}>
@@ -316,6 +299,15 @@ export default function AdminDashboardPage() {
                             </div>
                         }
                     >
+                        <Row style={{ marginBottom: '20px' }}>
+                            <Col xs={24}>
+                                <Statistic
+                                    title={`Total Events in ${selectedYear}`}
+                                    value={registrationData.reduce((sum, item) => sum + item.count, 0)}
+                                    prefix={<CalendarOutlined />}
+                                />
+                            </Col>
+                        </Row>
                         <Row gutter={[16, 16]}>
                             <Col xs={24} lg={15}>
                                 <Line data={registrationChartData} options={chartOptions} />
