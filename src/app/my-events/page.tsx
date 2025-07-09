@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/features/auth/model/useAuth";
 import Loading from "@/shared/ui/Loading";
-import { Card, Typography, Row, Col, Input, Select, Empty, Tag, Space, Button, notification, Modal, Descriptions, Form, Radio, Rate, Checkbox } from "antd";
+import { Card, Typography, Row, Col, Input, Select, Empty, Tag, Space, Button, notification, Modal, Descriptions, Form, Radio, Rate, Checkbox, Pagination } from "antd";
 import { useRouter } from "next/navigation";
 import { SearchOutlined, CalendarOutlined, EnvironmentOutlined, TeamOutlined, ClearOutlined, FileTextOutlined } from "@ant-design/icons";
 import { format, parseISO } from "date-fns";
@@ -70,6 +70,11 @@ export default function MyEventsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [dateRange, setDateRange] = useState<[moment.Moment, moment.Moment] | null>(null);
     const [mode, setMode] = useState<EventMode | null>(null);
+
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(12);
+    const [paginatedEvents, setPaginatedEvents] = useState<RegisteredEvent[]>([]);
 
     // Cancel registration states
     const [cancelling, setCancelling] = useState<number | null>(null);
@@ -151,6 +156,13 @@ export default function MyEventsPage() {
         setFiltereredEvents(result);
     }, [allEvents, searchTerm, mode, dateRange]);
 
+    // Pagination effect
+    useEffect(() => {
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        setPaginatedEvents(filteredEvents.slice(startIndex, endIndex));
+    }, [filteredEvents, currentPage, pageSize]);
+
     const getEventTypeTag = (type: string) => {
         const typeColors: Record<string, string> = {
             'Seminar': 'blue',
@@ -180,6 +192,7 @@ export default function MyEventsPage() {
         setSearchTerm('');
         setDateRange(null);
         setMode(null);
+        setCurrentPage(1); // Reset to first page
     };
 
     const showCancelModal = (eventId: number) => {
@@ -560,60 +573,84 @@ export default function MyEventsPage() {
                 </Card>
 
                 {filteredEvents.length > 0 ? (
-                    <Row gutter={[16, 16]}>
-                        {filteredEvents.map((event) => (
-                            <Col xs={24} sm={12} md={8} key={event.id}>
-                                <Card
-                                    hoverable
-                                    cover={
-                                        <img
-                                            alt={event.name}
-                                            src={event.posterUrl}
-                                            style={{ height: 200, objectFit: 'cover' }}
-                                        />
-                                    }
-                                >
-                                    <Space direction="vertical" style={{ width: '100%' }} size={12}>
-                                        <div style={{ minHeight: 32 }}>
-                                            <Space size={[0, 8]} wrap>
-                                                {getEventTypeTag(event.typeName)}
-                                                {getModeTag(event.mode)}
-                                                <Tag color="green">{event.registrationStatus}</Tag>
-                                            </Space>
-                                        </div>
+                    <>
+                        <Row gutter={[16, 16]}>
+                            {paginatedEvents.map((event) => (
+                                <Col xs={24} sm={12} md={8} key={event.id}>
+                                    <Card
+                                        hoverable
+                                        cover={
+                                            <img
+                                                alt={event.name}
+                                                src={event.posterUrl}
+                                                style={{ height: 200, objectFit: 'cover' }}
+                                            />
+                                        }
+                                    >
+                                        <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                                            <div style={{ minHeight: 32 }}>
+                                                <Space size={[0, 8]} wrap>
+                                                    {getEventTypeTag(event.typeName)}
+                                                    {getModeTag(event.mode)}
+                                                    <Tag color="green">{event.registrationStatus}</Tag>
+                                                </Space>
+                                            </div>
 
-                                        <Typography.Title
-                                            level={4}
-                                            ellipsis={{ rows: 1 }}
-                                            style={{ marginTop: 0, marginBottom: 0 }}
-                                        >
-                                            {event.name}
-                                        </Typography.Title>
-
-                                        <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                                            <Text type="secondary" ellipsis>
-                                                <CalendarOutlined /> {format(parseISO(event.startTime), "dd/MM/yyyy HH:mm")}
-                                            </Text>
-                                            <Text type="secondary" ellipsis>
-                                                <EnvironmentOutlined /> {event.locationAddress}
-                                            </Text>
-                                        </Space>
-
-                                        <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                                            <Button
-                                                type="primary"
-                                                block
-                                                onClick={() => router.push(`/events/${event.id}`)}
+                                            <Typography.Title
+                                                level={4}
+                                                ellipsis={{ rows: 1 }}
+                                                style={{ marginTop: 0, marginBottom: 0 }}
                                             >
-                                                Xem chi tiết
-                                            </Button>
-                                            {getActionButton(event)}
+                                                {event.name}
+                                            </Typography.Title>
+
+                                            <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                                                <Text type="secondary" ellipsis>
+                                                    <CalendarOutlined /> {format(parseISO(event.startTime), "dd/MM/yyyy HH:mm")}
+                                                </Text>
+                                                <Text type="secondary" ellipsis>
+                                                    <EnvironmentOutlined /> {event.locationAddress}
+                                                </Text>
+                                            </Space>
+
+                                            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                                                <Button
+                                                    type="primary"
+                                                    block
+                                                    onClick={() => router.push(`/events/${event.id}`)}
+                                                >
+                                                    Xem chi tiết
+                                                </Button>
+                                                {getActionButton(event)}
+                                            </Space>
                                         </Space>
-                                    </Space>
-                                </Card>
-                            </Col>
-                        ))}
-                    </Row>
+                                    </Card>
+                                </Col>
+                            ))}
+                        </Row>
+                        
+                        {/* Pagination */}
+                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '32px' }}>
+                            <Pagination
+                                current={currentPage}
+                                total={filteredEvents.length}
+                                pageSize={pageSize}
+                                showSizeChanger
+                                showQuickJumper
+                                showTotal={(total, range) => 
+                                    `${range[0]}-${range[1]} of ${total} events`
+                                }
+                                pageSizeOptions={['6', '12', '24', '48']}
+                                onChange={(page, size) => {
+                                    setCurrentPage(page);
+                                    if (size !== pageSize) {
+                                        setPageSize(size);
+                                        setCurrentPage(1); // Reset to first page when page size changes
+                                    }
+                                }}
+                            />
+                        </div>
+                    </>
                 ) : (
                     <Empty
                         description="Bạn chưa đăng ký sự kiện nào"
