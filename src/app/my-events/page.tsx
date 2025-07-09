@@ -290,6 +290,7 @@ export default function MyEventsPage() {
             setSurveyLoading(false);
         }
     };    const handleSurveySubmit = async () => {
+        debugger
         if (!survey || !selectedEventId) return;
 
         try {
@@ -333,9 +334,8 @@ export default function MyEventsPage() {
                 };
             });
 
-            // Get registration data to find registrationId
-            const registrationResponse = await axiosInstance.get(`/registrations/event/${selectedEventId}`);
-            const registrationId = registrationResponse.data.id;
+            // Use the eventId directly as registrationId
+            const registrationId = selectedEventId;
 
             const requestBody = {
                 surveyId: survey.id,
