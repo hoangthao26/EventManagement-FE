@@ -30,6 +30,7 @@ interface RegisteredEvent {
     registrationStatus: string;
     typeName: string;
     departmentName: string;
+    status: string; // <-- Add this line
 }
 
 interface SurveyOption {
@@ -88,6 +89,7 @@ export default function MyEventsPage() {
     const [surveyResponse, setSurveyResponse] = useState<any>(null); // For existing responses
     const [isUpdatingResponse, setIsUpdatingResponse] = useState(false);
     const [form] = Form.useForm();
+    const [noSurveyAvailable, setNoSurveyAvailable] = useState(false); // NEW STATE
 
     useEffect(() => {
         let isSubscribed = true;
@@ -98,6 +100,7 @@ export default function MyEventsPage() {
                 const mappedData: RegisteredEvent[] = response.data.map((item: any) => ({
                     ...item.eventInfo,
                     registrationStatus: item.registrationStatus,
+                    status: item.eventInfo.status, // <-- Ensure this is mapped
                 }));
                 if (isSubscribed) {
                     setAllEvents(mappedData);
@@ -156,12 +159,16 @@ export default function MyEventsPage() {
         setFiltereredEvents(result);
     }, [allEvents, searchTerm, mode, dateRange]);
 
-    // Pagination effect
+    // Pagination effect 
     useEffect(() => {
         const startIndex = (currentPage - 1) * pageSize;
         const endIndex = startIndex + pageSize;
         setPaginatedEvents(filteredEvents.slice(startIndex, endIndex));
     }, [filteredEvents, currentPage, pageSize]);
+
+    // Divide paginatedEvents into active and completed
+    const activeEvents = paginatedEvents.filter(event => event.status !== "COMPLETED");
+    const completedEvents = paginatedEvents.filter(event => event.status === "COMPLETED");
 
     const getEventTypeTag = (type: string) => {
         const typeColors: Record<string, string> = {
@@ -235,10 +242,16 @@ export default function MyEventsPage() {
         setSelectedEventId(eventId);
         setSurveyLoading(true);
         setIsSurveyModalOpen(true);
+        setNoSurveyAvailable(false); // Reset state
 
         try {
             // Fetch survey data
-            const surveyResponse = await axiosInstance.get<Survey>(`/surveys/events/${eventId}/survey`);
+            const surveyResponse = await axiosInstance.get<Survey>(`/surveys/events/${eventId}/survey/opened`);
+            if (!surveyResponse.data || !surveyResponse.data.id) {
+                setNoSurveyAvailable(true);
+                setSurvey(null);
+                return;
+            }
             setSurvey(surveyResponse.data);
 
             // Try to fetch existing response
@@ -280,12 +293,17 @@ export default function MyEventsPage() {
                 setIsUpdatingResponse(false);
                 setSurveyResponse(null);
             }
-        } catch (error) {
-            notification.error({
-                message: 'Error',
-                description: 'Failed to fetch survey'
-            });
-            setIsSurveyModalOpen(false);
+        } catch (error: any) {
+            if (error.response && error.response.status === 404) {
+                setNoSurveyAvailable(true);
+            } else {
+                notification.error({
+                    message: 'Error',
+                    description: 'Failed to fetch survey'
+                });
+            }
+            setSurvey(null);
+            setIsSurveyModalOpen(true);
         } finally {
             setSurveyLoading(false);
         }
@@ -491,6 +509,7 @@ export default function MyEventsPage() {
                     block
                     loading={cancelling === event.id}
                     onClick={() => showCancelModal(event.id)}
+                    disabled={event.status === "COMPLETED"} // <-- Disable if completed
                 >
                     Hủy đăng ký
                 </Button>
@@ -574,61 +593,124 @@ export default function MyEventsPage() {
 
                 {filteredEvents.length > 0 ? (
                     <>
-                        <Row gutter={[16, 16]}>
-                            {paginatedEvents.map((event) => (
-                                <Col xs={24} sm={12} md={8} key={event.id}>
-                                    <Card
-                                        hoverable
-                                        cover={
-                                            <img
-                                                alt={event.name}
-                                                src={event.posterUrl}
-                                                style={{ height: 200, objectFit: 'cover' }}
-                                            />
-                                        }
-                                    >
-                                        <Space direction="vertical" style={{ width: '100%' }} size={12}>
-                                            <div style={{ minHeight: 32 }}>
-                                                <Space size={[0, 8]} wrap>
-                                                    {getEventTypeTag(event.typeName)}
-                                                    {getModeTag(event.mode)}
-                                                    <Tag color="green">{event.registrationStatus}</Tag>
-                                                </Space>
-                                            </div>
-
-                                            <Typography.Title
-                                                level={4}
-                                                ellipsis={{ rows: 1 }}
-                                                style={{ marginTop: 0, marginBottom: 0 }}
+                        {/* Active Events Section */}
+                        {activeEvents.length > 0 && (
+                            <>
+                                <Title level={3} style={{ margin: '24px 0 12px' }}>Sự kiện đang tham gia</Title>
+                                <Row gutter={[16, 16]}>
+                                    {activeEvents.map((event) => (
+                                        <Col xs={24} sm={12} md={8} key={event.id}>
+                                            {/* Card rendering */}
+                                            <Card
+                                                hoverable
+                                                cover={
+                                                    <img
+                                                        alt={event.name}
+                                                        src={event.posterUrl}
+                                                        style={{ height: 200, objectFit: 'cover' }}
+                                                    />
+                                                }
                                             >
-                                                {event.name}
-                                            </Typography.Title>
+                                                <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                                                    <div style={{ minHeight: 32 }}>
+                                                        <Space size={[0, 8]} wrap>
+                                                            {getEventTypeTag(event.typeName)}
+                                                            {getModeTag(event.mode)}
+                                                            <Tag color="green">{event.registrationStatus}</Tag>
+                                                        </Space>
+                                                    </div>
+                                                    <Typography.Title
+                                                        level={4}
+                                                        ellipsis={{ rows: 1 }}
+                                                        style={{ marginTop: 0, marginBottom: 0 }}
+                                                    >
+                                                        {event.name}
+                                                    </Typography.Title>
+                                                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                                                        <Text type="secondary" ellipsis>
+                                                            <CalendarOutlined /> {format(parseISO(event.startTime), "dd/MM/yyyy HH:mm")}
+                                                        </Text>
+                                                        <Text type="secondary" ellipsis>
+                                                            <EnvironmentOutlined /> {event.locationAddress}
+                                                        </Text>
+                                                    </Space>
+                                                    <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                                                        <Button
+                                                            type="primary"
+                                                            block
+                                                            onClick={() => router.push(`/events/${event.id}`)}
+                                                        >
+                                                            Xem chi tiết
+                                                        </Button>
+                                                        {getActionButton(event)}
+                                                    </Space>
+                                                </Space>
+                                            </Card>
+                                        </Col>
+                                    ))}
+                                </Row>
+                            </>
+                        )}
 
-                                            <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                                                <Text type="secondary" ellipsis>
-                                                    <CalendarOutlined /> {format(parseISO(event.startTime), "dd/MM/yyyy HH:mm")}
-                                                </Text>
-                                                <Text type="secondary" ellipsis>
-                                                    <EnvironmentOutlined /> {event.locationAddress}
-                                                </Text>
-                                            </Space>
+                        {/* Completed Events Section */}
+                        {completedEvents.length > 0 && (
+                            <>
+                                <Title level={3} style={{ margin: '32px 0 12px' }}>Sự kiện đã hoàn thành</Title>
+                                <Row gutter={[16, 16]}>
+                                    {completedEvents.map((event) => (
+                                        <Col xs={24} sm={12} md={8} key={event.id}>
+                                            {/* Card rendering */}
+                                            <Card
+                                                hoverable
+                                                cover={
+                                                    <img
+                                                        alt={event.name}
+                                                        src={event.posterUrl}
+                                                        style={{ height: 200, objectFit: 'cover' }}
+                                                    />
+                                                }
+                                            >
+                                                <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                                                    <div style={{ minHeight: 32 }}>
+                                                        <Space size={[0, 8]} wrap>
+                                                            {getEventTypeTag(event.typeName)}
+                                                            {getModeTag(event.mode)}
+                                                            <Tag color="green">{event.registrationStatus}</Tag>
+                                                        </Space>
+                                                    </div>
+                                                    <Typography.Title
+                                                        level={4}
+                                                        ellipsis={{ rows: 1 }}
+                                                        style={{ marginTop: 0, marginBottom: 0 }}
+                                                    >
+                                                        {event.name}
+                                                    </Typography.Title>
+                                                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                                                        <Text type="secondary" ellipsis>
+                                                            <CalendarOutlined /> {format(parseISO(event.startTime), "dd/MM/yyyy HH:mm")}
+                                                        </Text>
+                                                        <Text type="secondary" ellipsis>
+                                                            <EnvironmentOutlined /> {event.locationAddress}
+                                                        </Text>
+                                                    </Space>
+                                                    <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                                                        <Button
+                                                            type="primary"
+                                                            block
+                                                            onClick={() => router.push(`/events/${event.id}`)}
+                                                        >
+                                                            Xem chi tiết
+                                                        </Button>
+                                                        {getActionButton(event)}
+                                                    </Space>
+                                                </Space>
+                                            </Card>
+                                        </Col>
+                                    ))}
+                                </Row>
+                            </>
+                        )}
 
-                                            <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                                                <Button
-                                                    type="primary"
-                                                    block
-                                                    onClick={() => router.push(`/events/${event.id}`)}
-                                                >
-                                                    Xem chi tiết
-                                                </Button>
-                                                {getActionButton(event)}
-                                            </Space>
-                                        </Space>
-                                    </Card>
-                                </Col>
-                            ))}
-                        </Row>
-                        
                         {/* Pagination */}
                         <div style={{ display: 'flex', justifyContent: 'center', marginTop: '32px' }}>
                             <Pagination
@@ -706,6 +788,7 @@ export default function MyEventsPage() {
                         setSurvey(null);
                         setSurveyResponse(null);
                         setIsUpdatingResponse(false);
+                        setNoSurveyAvailable(false);
                         form.resetFields();
                     }}
                     footer={[
@@ -715,6 +798,7 @@ export default function MyEventsPage() {
                             setSurvey(null);
                             setSurveyResponse(null);
                             setIsUpdatingResponse(false);
+                            setNoSurveyAvailable(false);
                             form.resetFields();
                         }}>
                             Hủy
@@ -729,7 +813,7 @@ export default function MyEventsPage() {
                                         description: 'Please fill in all required fields'
                                     });
                                 });
-                        }}>
+                        }} disabled={noSurveyAvailable}>
                             {isUpdatingResponse ? "Cập nhật khảo sát" : "Gửi khảo sát"}
                         </Button>
                     ]}
@@ -737,6 +821,11 @@ export default function MyEventsPage() {
                 >
                     {surveyLoading ? (
                         <Loading />
+                    ) : noSurveyAvailable ? (
+                        <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                            <Title level={4}>Không có khảo sát nào cho sự kiện này</Title>
+                            <Text type="secondary">Hiện tại không có khảo sát nào được mở cho sự kiện này.</Text>
+                        </div>
                     ) : survey ? (
                         <div>
                             <Title level={4}>{survey.title}</Title>

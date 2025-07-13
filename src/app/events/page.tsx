@@ -54,6 +54,7 @@ interface Event {
     description: string;
     mode: 'ONLINE' | 'OFFLINE';
     tags: EventTag[];
+    status?: string; // Add status for completed logic
 }
 
 
@@ -179,6 +180,10 @@ export default function EventsPage() {
         const endIndex = startIndex + pageSize;
         setPaginatedEvents(filteredEvents.slice(startIndex, endIndex));
     }, [filteredEvents, currentPage, pageSize]);
+
+    // Divide paginatedEvents into active and completed
+    const activeEvents = paginatedEvents.filter(event => event.status !== "COMPLETED");
+    const completedEvents = paginatedEvents.filter(event => event.status === "COMPLETED");
 
     const getEventTypeTag = (type: string) => {
         const typeColors: Record<string, string> = {
@@ -344,61 +349,110 @@ export default function EventsPage() {
 
                 {filteredEvents.length > 0 ? (
                     <>
-                        <Row gutter={[16, 16]}>
-                            {paginatedEvents.map((event) => (
-                                <Col xs={24} sm={12} md={8} key={event.id}>
-                                    <Card
-                                        hoverable
-                                        cover={
-                                            <img
-                                                alt={event.name}
-                                                src={event.posterUrl}
-                                                style={{ height: 200, objectFit: 'cover' }}
-                                            />
-                                        }
-
-                                    >
-                                        <Space direction="vertical" style={{ width: '100%' }} size={12}>
-                                            {/* Fix blinking tags by adding a fixed height container */}
-                                            <div style={{ minHeight: 32 }}>
-                                                <Space size={[0, 8]} wrap>
-                                                    {getEventTypeTag(event.typeName)}
-                                                    {getModeTag(event.mode)}
-
+                        {/* Active Events Section */}
+                        {activeEvents.length > 0 && (
+                            <>
+                                <Title level={3} style={{ margin: '24px 0 12px' }}>Sự kiện sắp tới</Title>
+                                <Row gutter={[16, 16]}>
+                                    {activeEvents.map((event) => (
+                                        <Col xs={24} sm={12} md={8} key={event.id}>
+                                            <Card
+                                                hoverable
+                                                cover={
+                                                    <img
+                                                        alt={event.name}
+                                                        src={event.posterUrl}
+                                                        style={{ height: 200, objectFit: 'cover' }}
+                                                    />
+                                                }
+                                            >
+                                                <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                                                    <div style={{ minHeight: 32 }}>
+                                                        <Space size={[0, 8]} wrap>
+                                                            {getEventTypeTag(event.typeName)}
+                                                            {getModeTag(event.mode)}
+                                                        </Space>
+                                                    </div>
+                                                    <Typography.Title
+                                                        level={4}
+                                                        ellipsis={{ rows: 1 }}
+                                                        style={{ marginTop: 0, marginBottom: 0 }}
+                                                    >
+                                                        {event.name}
+                                                    </Typography.Title>
+                                                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                                                        <Text type="secondary" ellipsis>
+                                                            <CalendarOutlined /> {format(parseISO(event.startTime), "dd/MM/yyyy HH:mm")}
+                                                        </Text>
+                                                        <Text type="secondary" ellipsis>
+                                                            <EnvironmentOutlined /> {event.locationAddress}
+                                                        </Text>
+                                                    </Space>
+                                                    <Button type="primary" block
+                                                        onClick={() => router.push(`/events/${event.id}`)}
+                                                    >
+                                                        Xem chi tiết
+                                                    </Button>
                                                 </Space>
-                                            </div>
+                                            </Card>
+                                        </Col>
+                                    ))}
+                                </Row>
+                            </>
+                        )}
 
-                                            {/* Title with ellipsis */}
-                                            <Typography.Title
-                                                level={4}
-                                                ellipsis={{ rows: 1 }}
-                                                style={{ marginTop: 0, marginBottom: 0 }}
+                        {/* Completed Events Section */}
+                        {completedEvents.length > 0 && (
+                            <>
+                                <Title level={3} style={{ margin: '32px 0 12px' }}>Sự kiện đã hoàn thành</Title>
+                                <Row gutter={[16, 16]}>
+                                    {completedEvents.map((event) => (
+                                        <Col xs={24} sm={12} md={8} key={event.id}>
+                                            <Card
+                                                hoverable
+                                                cover={
+                                                    <img
+                                                        alt={event.name}
+                                                        src={event.posterUrl}
+                                                        style={{ height: 200, objectFit: 'cover' }}
+                                                    />
+                                                }
                                             >
-                                                {event.name}
-                                            </Typography.Title>
+                                                <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                                                    <div style={{ minHeight: 32 }}>
+                                                        <Space size={[0, 8]} wrap>
+                                                            {getEventTypeTag(event.typeName)}
+                                                            {getModeTag(event.mode)}
+                                                        </Space>
+                                                    </div>
+                                                    <Typography.Title
+                                                        level={4}
+                                                        ellipsis={{ rows: 1 }}
+                                                        style={{ marginTop: 0, marginBottom: 0 }}
+                                                    >
+                                                        {event.name}
+                                                    </Typography.Title>
+                                                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                                                        <Text type="secondary" ellipsis>
+                                                            <CalendarOutlined /> {format(parseISO(event.startTime), "dd/MM/yyyy HH:mm")}
+                                                        </Text>
+                                                        <Text type="secondary" ellipsis>
+                                                            <EnvironmentOutlined /> {event.locationAddress}
+                                                        </Text>
+                                                    </Space>
+                                                    <Button type="primary" block
+                                                        onClick={() => router.push(`/events/${event.id}`)}
+                                                    >
+                                                        Xem chi tiết
+                                                    </Button>
+                                                </Space>
+                                            </Card>
+                                        </Col>
+                                    ))}
+                                </Row>
+                            </>
+                        )}
 
-                                            {/* Description with ellipsis */}
-
-                                            <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                                                <Text type="secondary" ellipsis>
-                                                    <CalendarOutlined /> {format(parseISO(event.startTime), "dd/MM/yyyy HH:mm")}
-                                                </Text>
-                                                <Text type="secondary" ellipsis>
-                                                    <EnvironmentOutlined /> {event.locationAddress}
-                                                </Text>
-                                            </Space>
-
-                                            <Button type="primary" block
-                                                onClick={() => router.push(`/events/${event.id}`)}
-                                            >
-                                                Xem chi tiết
-                                            </Button>
-                                        </Space>
-                                    </Card>
-                                </Col>
-                            ))}
-                        </Row>
-                        
                         {/* Pagination */}
                         <div style={{ display: 'flex', justifyContent: 'center', marginTop: '32px' }}>
                             <Pagination
