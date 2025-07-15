@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/features/auth/model/useAuth";
 import Loading from "@/shared/ui/Loading";
-import { Card, Typography, Row, Col, Input, Select, Empty, Tag, Space, Button, notification, Modal, Descriptions, Form, Radio, Rate, Checkbox } from "antd";
+import { Card, Typography, Row, Col, Input, Select, Empty, Tag, Space, Button, notification, Modal, Descriptions, Form, Radio, Rate, Checkbox, Pagination } from "antd";
 import { useRouter } from "next/navigation";
 import { SearchOutlined, CalendarOutlined, EnvironmentOutlined, TeamOutlined, ClearOutlined, FileTextOutlined } from "@ant-design/icons";
 import { format, parseISO } from "date-fns";
@@ -30,6 +30,7 @@ interface RegisteredEvent {
     registrationStatus: string;
     typeName: string;
     departmentName: string;
+    status: string; // <-- Add this line
 }
 
 interface SurveyOption {
@@ -71,6 +72,11 @@ export default function MyEventsPage() {
     const [dateRange, setDateRange] = useState<[moment.Moment, moment.Moment] | null>(null);
     const [mode, setMode] = useState<EventMode | null>(null);
 
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(12);
+    const [paginatedEvents, setPaginatedEvents] = useState<RegisteredEvent[]>([]);
+
     // Cancel registration states
     const [cancelling, setCancelling] = useState<number | null>(null);
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
@@ -80,7 +86,10 @@ export default function MyEventsPage() {
     const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
     const [surveyLoading, setSurveyLoading] = useState(false);
     const [survey, setSurvey] = useState<Survey | null>(null);
+    const [surveyResponse, setSurveyResponse] = useState<any>(null); // For existing responses
+    const [isUpdatingResponse, setIsUpdatingResponse] = useState(false);
     const [form] = Form.useForm();
+    const [noSurveyAvailable, setNoSurveyAvailable] = useState(false); // NEW STATE
 
     useEffect(() => {
         let isSubscribed = true;
@@ -91,6 +100,7 @@ export default function MyEventsPage() {
                 const mappedData: RegisteredEvent[] = response.data.map((item: any) => ({
                     ...item.eventInfo,
                     registrationStatus: item.registrationStatus,
+                    status: item.eventInfo.status, // <-- Ensure this is mapped
                 }));
                 if (isSubscribed) {
                     setAllEvents(mappedData);
@@ -149,6 +159,17 @@ export default function MyEventsPage() {
         setFiltereredEvents(result);
     }, [allEvents, searchTerm, mode, dateRange]);
 
+    // Pagination effect 
+    useEffect(() => {
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        setPaginatedEvents(filteredEvents.slice(startIndex, endIndex));
+    }, [filteredEvents, currentPage, pageSize]);
+
+    // Divide paginatedEvents into active and completed
+    const activeEvents = paginatedEvents.filter(event => event.status !== "COMPLETED");
+    const completedEvents = paginatedEvents.filter(event => event.status === "COMPLETED");
+
     const getEventTypeTag = (type: string) => {
         const typeColors: Record<string, string> = {
             'Seminar': 'blue',
@@ -178,6 +199,7 @@ export default function MyEventsPage() {
         setSearchTerm('');
         setDateRange(null);
         setMode(null);
+        setCurrentPage(1); // Reset to first page
     };
 
     const showCancelModal = (eventId: number) => {
@@ -220,73 +242,151 @@ export default function MyEventsPage() {
         setSelectedEventId(eventId);
         setSurveyLoading(true);
         setIsSurveyModalOpen(true);
+        setNoSurveyAvailable(false); // Reset state
 
         try {
-            const response = await axiosInstance.get<Survey>(`/surveys/events/${eventId}/survey`);
-            setSurvey(response.data);
-        } catch (error) {
-            notification.error({
-                message: 'Error',
-                description: 'Failed to fetch survey'
-            });
-            setIsSurveyModalOpen(false);
+            // Fetch survey data
+            const surveyResponse = await axiosInstance.get<Survey>(`/surveys/events/${eventId}/survey/opened`);
+            if (!surveyResponse.data || !surveyResponse.data.id) {
+                setNoSurveyAvailable(true);
+                setSurvey(null);
+                return;
+            }
+            setSurvey(surveyResponse.data);
+
+            // Try to fetch existing response
+            try {
+                const registrationResponse = await axiosInstance.get(`/registrations/event/${eventId}`);
+                const registrationId = registrationResponse.data.id;
+                
+                const responseData = await axiosInstance.get(`/surveys/responses/registration/${registrationId}`);
+                
+                if (responseData.data) {
+                    setSurveyResponse(responseData.data);
+                    setIsUpdatingResponse(true);
+                    
+                    // Pre-fill form with existing answers
+                    const formValues: Record<string, any> = {};
+                    responseData.data.answers?.forEach((answer: any) => {
+                        const fieldName = `question_${answer.questionId}`;
+                        
+                        if (answer.answerText) {
+                            // For TEXT and RATING questions
+                            formValues[fieldName] = answer.questionId && surveyResponse.data.questions.find(q => q.id === answer.questionId)?.type === 'RATING' 
+                                ? parseFloat(answer.answerText) 
+                                : answer.answerText;
+                        } else if (answer.selectedOptions && answer.selectedOptions.length > 0) {
+                            // For RADIO, CHECKBOX, DROPDOWN questions
+                            const question = surveyResponse.data.questions.find(q => q.id === answer.questionId);
+                            if (question?.type === 'CHECKBOX') {
+                                formValues[fieldName] = answer.selectedOptions.map((opt: any) => opt.optionId);
+                            } else {
+                                formValues[fieldName] = answer.selectedOptions[0].optionId;
+                            }
+                        }
+                    });
+                    
+                    form.setFieldsValue(formValues);
+                }
+            } catch (responseError) {
+                // No existing response found, that's okay
+                setIsUpdatingResponse(false);
+                setSurveyResponse(null);
+            }
+        } catch (error: any) {
+            if (error.response && error.response.status === 404) {
+                setNoSurveyAvailable(true);
+            } else {
+                notification.error({
+                    message: 'Error',
+                    description: 'Failed to fetch survey'
+                });
+            }
+            setSurvey(null);
+            setIsSurveyModalOpen(true);
         } finally {
             setSurveyLoading(false);
         }
     };    const handleSurveySubmit = async () => {
+        debugger
         if (!survey || !selectedEventId) return;
 
         try {
             const formValues = form.getFieldsValue();
             
-            // Format answers for submission
+            // Format answers for submission according to API spec
             const answers = survey.questions.map(question => {
                 const fieldName = `question_${question.id}`;
                 const value = formValues[fieldName];
                 
+                let selectedOptions: { optionId: number }[] = [];
+                let answerText = '';
+                
                 // Format based on question type
-                let formattedValue;
                 switch (question.type) {
                     case 'TEXT':
-                        formattedValue = value || '';
+                        answerText = value || '';
                         break;
                     case 'RADIO':
                     case 'DROPDOWN':
-                        formattedValue = value ? [value] : [];
+                        if (value) {
+                            selectedOptions = [{ optionId: value }];
+                        }
                         break;
                     case 'CHECKBOX':
-                        formattedValue = Array.isArray(value) ? value : [];
+                        if (Array.isArray(value) && value.length > 0) {
+                            selectedOptions = value.map(optionId => ({ optionId }));
+                        }
                         break;
                     case 'RATING':
-                        formattedValue = value ? value.toString() : '';
+                        answerText = value ? value.toString() : '';
                         break;
                     default:
-                        formattedValue = value || '';
+                        answerText = value || '';
                 }
                 
                 return {
                     questionId: question.id,
-                    selectedOptionIds: question.type === 'TEXT' || question.type === 'RATING' ? [] : formattedValue,
-                    textAnswer: question.type === 'TEXT' || question.type === 'RATING' ? formattedValue : ''
+                    selectedOptions,
+                    answerText
                 };
             });
 
-            await axiosInstance.post(`/surveys/${survey.id}/submit`, {
-                answers: answers
-            });
+            // Use the eventId directly as registrationId
+            const registrationId = selectedEventId;
 
-            notification.success({
-                message: 'Success',
-                description: 'Survey submitted successfully'
-            });
+            const requestBody = {
+                surveyId: survey.id,
+                registrationId: registrationId,
+                answers: answers
+            };
+
+            if (isUpdatingResponse && surveyResponse) {
+                // Update existing response
+                await axiosInstance.put(`/surveys/${surveyResponse.id}/update`, requestBody);
+                notification.success({
+                    message: 'Success',
+                    description: 'Survey response updated successfully'
+                });
+            } else {
+                // Create new response
+                await axiosInstance.post('/surveys/submit', requestBody);
+                notification.success({
+                    message: 'Success',
+                    description: 'Survey submitted successfully'
+                });
+            }
+
             setIsSurveyModalOpen(false);
             form.resetFields();
             setSurvey(null);
+            setSurveyResponse(null);
+            setIsUpdatingResponse(false);
             setSelectedEventId(null);
         } catch (error) {
             notification.error({
                 message: 'Error',
-                description: 'Failed to submit survey'
+                description: isUpdatingResponse ? 'Failed to update survey response' : 'Failed to submit survey'
             });
         }
     };const renderSurveyQuestion = (question: SurveyQuestion) => {
@@ -409,6 +509,7 @@ export default function MyEventsPage() {
                     block
                     loading={cancelling === event.id}
                     onClick={() => showCancelModal(event.id)}
+                    disabled={event.status === "COMPLETED"} // <-- Disable if completed
                 >
                     Hủy đăng ký
                 </Button>
@@ -491,60 +592,147 @@ export default function MyEventsPage() {
                 </Card>
 
                 {filteredEvents.length > 0 ? (
-                    <Row gutter={[16, 16]}>
-                        {filteredEvents.map((event) => (
-                            <Col xs={24} sm={12} md={8} key={event.id}>
-                                <Card
-                                    hoverable
-                                    cover={
-                                        <img
-                                            alt={event.name}
-                                            src={event.posterUrl}
-                                            style={{ height: 200, objectFit: 'cover' }}
-                                        />
-                                    }
-                                >
-                                    <Space direction="vertical" style={{ width: '100%' }} size={12}>
-                                        <div style={{ minHeight: 32 }}>
-                                            <Space size={[0, 8]} wrap>
-                                                {getEventTypeTag(event.typeName)}
-                                                {getModeTag(event.mode)}
-                                                <Tag color="green">{event.registrationStatus}</Tag>
-                                            </Space>
-                                        </div>
-
-                                        <Typography.Title
-                                            level={4}
-                                            ellipsis={{ rows: 1 }}
-                                            style={{ marginTop: 0, marginBottom: 0 }}
-                                        >
-                                            {event.name}
-                                        </Typography.Title>
-
-                                        <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                                            <Text type="secondary" ellipsis>
-                                                <CalendarOutlined /> {format(parseISO(event.startTime), "dd/MM/yyyy HH:mm")}
-                                            </Text>
-                                            <Text type="secondary" ellipsis>
-                                                <EnvironmentOutlined /> {event.locationAddress}
-                                            </Text>
-                                        </Space>
-
-                                        <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                                            <Button
-                                                type="primary"
-                                                block
-                                                onClick={() => router.push(`/events/${event.id}`)}
+                    <>
+                        {/* Active Events Section */}
+                        {activeEvents.length > 0 && (
+                            <>
+                                <Title level={3} style={{ margin: '24px 0 12px' }}>Sự kiện đang tham gia</Title>
+                                <Row gutter={[16, 16]}>
+                                    {activeEvents.map((event) => (
+                                        <Col xs={24} sm={12} md={8} key={event.id}>
+                                            {/* Card rendering */}
+                                            <Card
+                                                hoverable
+                                                cover={
+                                                    <img
+                                                        alt={event.name}
+                                                        src={event.posterUrl}
+                                                        style={{ height: 200, objectFit: 'cover' }}
+                                                    />
+                                                }
                                             >
-                                                Xem chi tiết
-                                            </Button>
-                                            {getActionButton(event)}
-                                        </Space>
-                                    </Space>
-                                </Card>
-                            </Col>
-                        ))}
-                    </Row>
+                                                <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                                                    <div style={{ minHeight: 32 }}>
+                                                        <Space size={[0, 8]} wrap>
+                                                            {getEventTypeTag(event.typeName)}
+                                                            {getModeTag(event.mode)}
+                                                            <Tag color="green">{event.registrationStatus}</Tag>
+                                                        </Space>
+                                                    </div>
+                                                    <Typography.Title
+                                                        level={4}
+                                                        ellipsis={{ rows: 1 }}
+                                                        style={{ marginTop: 0, marginBottom: 0 }}
+                                                    >
+                                                        {event.name}
+                                                    </Typography.Title>
+                                                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                                                        <Text type="secondary" ellipsis>
+                                                            <CalendarOutlined /> {format(parseISO(event.startTime), "dd/MM/yyyy HH:mm")}
+                                                        </Text>
+                                                        <Text type="secondary" ellipsis>
+                                                            <EnvironmentOutlined /> {event.locationAddress}
+                                                        </Text>
+                                                    </Space>
+                                                    <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                                                        <Button
+                                                            type="primary"
+                                                            block
+                                                            onClick={() => router.push(`/events/${event.id}`)}
+                                                        >
+                                                            Xem chi tiết
+                                                        </Button>
+                                                        {getActionButton(event)}
+                                                    </Space>
+                                                </Space>
+                                            </Card>
+                                        </Col>
+                                    ))}
+                                </Row>
+                            </>
+                        )}
+
+                        {/* Completed Events Section */}
+                        {completedEvents.length > 0 && (
+                            <>
+                                <Title level={3} style={{ margin: '32px 0 12px' }}>Sự kiện đã hoàn thành</Title>
+                                <Row gutter={[16, 16]}>
+                                    {completedEvents.map((event) => (
+                                        <Col xs={24} sm={12} md={8} key={event.id}>
+                                            {/* Card rendering */}
+                                            <Card
+                                                hoverable
+                                                cover={
+                                                    <img
+                                                        alt={event.name}
+                                                        src={event.posterUrl}
+                                                        style={{ height: 200, objectFit: 'cover' }}
+                                                    />
+                                                }
+                                            >
+                                                <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                                                    <div style={{ minHeight: 32 }}>
+                                                        <Space size={[0, 8]} wrap>
+                                                            {getEventTypeTag(event.typeName)}
+                                                            {getModeTag(event.mode)}
+                                                            <Tag color="green">{event.registrationStatus}</Tag>
+                                                        </Space>
+                                                    </div>
+                                                    <Typography.Title
+                                                        level={4}
+                                                        ellipsis={{ rows: 1 }}
+                                                        style={{ marginTop: 0, marginBottom: 0 }}
+                                                    >
+                                                        {event.name}
+                                                    </Typography.Title>
+                                                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                                                        <Text type="secondary" ellipsis>
+                                                            <CalendarOutlined /> {format(parseISO(event.startTime), "dd/MM/yyyy HH:mm")}
+                                                        </Text>
+                                                        <Text type="secondary" ellipsis>
+                                                            <EnvironmentOutlined /> {event.locationAddress}
+                                                        </Text>
+                                                    </Space>
+                                                    <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                                                        <Button
+                                                            type="primary"
+                                                            block
+                                                            onClick={() => router.push(`/events/${event.id}`)}
+                                                        >
+                                                            Xem chi tiết
+                                                        </Button>
+                                                        {getActionButton(event)}
+                                                    </Space>
+                                                </Space>
+                                            </Card>
+                                        </Col>
+                                    ))}
+                                </Row>
+                            </>
+                        )}
+
+                        {/* Pagination */}
+                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '32px' }}>
+                            <Pagination
+                                current={currentPage}
+                                total={filteredEvents.length}
+                                pageSize={pageSize}
+                                showSizeChanger
+                                showQuickJumper
+                                showTotal={(total, range) => 
+                                    `${range[0]}-${range[1]} of ${total} events`
+                                }
+                                pageSizeOptions={['6', '12', '24', '48']}
+                                onChange={(page, size) => {
+                                    setCurrentPage(page);
+                                    if (size !== pageSize) {
+                                        setPageSize(size);
+                                        setCurrentPage(1); // Reset to first page when page size changes
+                                    }
+                                }}
+                            />
+                        </div>
+                    </>
                 ) : (
                     <Empty
                         description="Bạn chưa đăng ký sự kiện nào"
@@ -592,12 +780,15 @@ export default function MyEventsPage() {
 
                 {/* Survey Modal */}
                 <Modal
-                    title="Khảo sát sự kiện"
+                    title={isUpdatingResponse ? "Chỉnh sửa khảo sát sự kiện" : "Khảo sát sự kiện"}
                     open={isSurveyModalOpen}
                     onCancel={() => {
                         setIsSurveyModalOpen(false);
                         setSelectedEventId(null);
                         setSurvey(null);
+                        setSurveyResponse(null);
+                        setIsUpdatingResponse(false);
+                        setNoSurveyAvailable(false);
                         form.resetFields();
                     }}
                     footer={[
@@ -605,6 +796,9 @@ export default function MyEventsPage() {
                             setIsSurveyModalOpen(false);
                             setSelectedEventId(null);
                             setSurvey(null);
+                            setSurveyResponse(null);
+                            setIsUpdatingResponse(false);
+                            setNoSurveyAvailable(false);
                             form.resetFields();
                         }}>
                             Hủy
@@ -619,14 +813,19 @@ export default function MyEventsPage() {
                                         description: 'Please fill in all required fields'
                                     });
                                 });
-                        }}>
-                            Gửi khảo sát
+                        }} disabled={noSurveyAvailable}>
+                            {isUpdatingResponse ? "Cập nhật khảo sát" : "Gửi khảo sát"}
                         </Button>
                     ]}
                     width={800}
                 >
                     {surveyLoading ? (
                         <Loading />
+                    ) : noSurveyAvailable ? (
+                        <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                            <Title level={4}>Không có khảo sát nào cho sự kiện này</Title>
+                            <Text type="secondary">Hiện tại không có khảo sát nào được mở cho sự kiện này.</Text>
+                        </div>
                     ) : survey ? (
                         <div>
                             <Title level={4}>{survey.title}</Title>
