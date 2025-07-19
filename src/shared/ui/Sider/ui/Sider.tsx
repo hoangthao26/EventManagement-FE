@@ -52,19 +52,19 @@ export const Sider: React.FC<SiderProps> = ({ collapsed }) => {
                 label: 'Dashboard',
                 onClick: () => router.push('/admin'),
             },
-            {
-                key: '/departments',
-                icon: <TeamOutlined />,
-                label: 'Departments',
-                onClick: () => router.push('/admin/departments'),
-            },
-            {
-                key: '/admin/tags',
-                icon: <TagOutlined />,
-                label: 'Tags',
-                onClick: () => router.push('/admin/tags'),
-            }
-        );
+                {
+                    key: '/departments',
+                    icon: <TeamOutlined />,
+                    label: 'Departments',
+                    onClick: () => router.push('/admin/departments'),
+                },
+                {
+                    key: '/admin/tags',
+                    icon: <TagOutlined />,
+                    label: 'Tags',
+                    onClick: () => router.push('/admin/tags'),
+                }
+            );
         }
 
         // Events menu cho tất cả roles
@@ -78,10 +78,10 @@ export const Sider: React.FC<SiderProps> = ({ collapsed }) => {
         // Registered Events cho STUDENT và LECTURER
         if (hasRole('STUDENT') || hasRole('LECTURER')) {
             items.push({
-                key: '/registered-events',
+                key: '/my-events',
                 icon: <CheckCircleOutlined />,
                 label: 'Registered Events',
-                onClick: () => router.push('/registered-events'),
+                onClick: () => router.push('/my-events'),
             });
         }
 
@@ -106,14 +106,14 @@ export const Sider: React.FC<SiderProps> = ({ collapsed }) => {
         }
 
         // Team menu chỉ cho ADMIN và LECTURER
-        if (hasRole('ADMIN') || hasRole('LECTURER')) {
-            items.push({
-                key: '/team',
-                icon: <TeamOutlined />,
-                label: 'Team',
-                onClick: () => router.push('/team'),
-            });
-        }
+        // if (hasRole('ADMIN') || hasRole('LECTURER')) {
+        //     items.push({
+        //         key: '/team',
+        //         icon: <TeamOutlined />,
+        //         label: 'Team',
+        //         onClick: () => router.push('/team'),
+        //     });
+        // }
 
         // Profile menu cho tất cả roles
         items.push({
