@@ -315,34 +315,30 @@ export default function EventOverviewPage() {
             {/* Main statistics */}
             <Row gutter={[16, 16]}>
                 <Col xs={24} sm={12} md={6}>
-                    <Card>
+                    <Card style={{ height: '100%', }}>
                         <Statistic
-                            title="Total Registered"
+                            title="Total Users"
                             value={dashboardData.totalRegistered}
                             prefix={<TeamOutlined />}
                         />
+                        <div style={{ marginTop: '10px' }}>
+                            <Statistic
+                                title="Total Students"
+                                value={dashboardData.studentCount}
+                                prefix={<UserOutlined />}
+                                valueStyle={{ fontSize: 16 }}
+                            />
+                            <Statistic
+                                title="Total Lecturers"
+                                value={dashboardData.lecturerCount}
+                                prefix={<UserOutlined />}
+                                valueStyle={{ fontSize: 16 }}
+                            />
+                        </div>
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
-                    <Card>
-                        <Statistic
-                            title="Students"
-                            value={dashboardData.studentCount}
-                            prefix={<UserOutlined />}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                    <Card>
-                        <Statistic
-                            title="Lecturers"
-                            value={dashboardData.lecturerCount}
-                            prefix={<UserOutlined />}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                    <Card>
+                    <Card style={{ marginBottom: '16px' }}>
                         <Statistic
                             title="Attendance Rate"
                             value={dashboardData.attendedRate}
@@ -351,11 +347,7 @@ export default function EventOverviewPage() {
                             precision={2}
                         />
                     </Card>
-                </Col>
-            </Row>  
-            
-            <Row gutter={[16, 16]} style={{ marginTop: '16px' }}>
-                <Col xs={24} sm={12} md={6}>
+                    
                     <Card>
                         <Statistic
                             title="Attended Count"
@@ -363,8 +355,9 @@ export default function EventOverviewPage() {
                             prefix={<CheckCircleOutlined />}
                         />
                     </Card>
+                
                 </Col>
-            </Row>
+            </Row>  
 
             {/* Survey Results Section */}
             <Card style={{ marginTop: '24px' }}>

@@ -8,8 +8,9 @@ import axios from "axios";
 import Loading from "@/shared/ui/Loading";
 import { useSession } from "next-auth/react";
 import { ImageUpload } from "@/features/event-management/create/ui/ImageUpload";
-import { SearchOutlined, QuestionCircleOutlined } from "@ant-design/icons";
+import { SearchOutlined, QuestionCircleOutlined, EditOutlined, DeleteOutlined, UserDeleteOutlined} from "@ant-design/icons";
 import { useAntdMessage } from "@/shared/lib/hooks/useAntdMessage";
+const { Search } = Input;
 
 // Add interface for role type
 interface RoleType {
@@ -36,7 +37,7 @@ interface UnassignedUserType {
 export default function DepartmentsPage() {
     const { status } = useAuth();
     const { data: session } = useSession();
-    const [data, setData] = useState([])
+    const [data, setData] = useState<any[]>([])
     const [modalCreate, setModalCreate] = useState(false);
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
@@ -44,12 +45,9 @@ export default function DepartmentsPage() {
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editForm] = Form.useForm();
     const [editingDepartment, setEditingDepartment] = useState<any>(null);
-    const [searchText, setSearchText] = useState('');
-    const [searchedColumn, setSearchedColumn] = useState('');
+    const [departmentSearchText, setDepartmentSearchText] = useState('');
     const [memberSearchText, setMemberSearchText] = useState('');
-    const [memberSearchedColumn, setMemberSearchedColumn] = useState('');
     const [unassignedSearchText, setUnassignedSearchText] = useState('');
-    const [unassignedSearchedColumn, setUnassignedSearchedColumn] = useState('');
     const [detailLoading, setDetailLoading] = useState(false);
     const [selectedDepartment, setSelectedDepartment] = useState<any>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -67,183 +65,6 @@ export default function DepartmentsPage() {
     const [unassignedUsersLoading, setUnassignedUsersLoading] = useState(false);
     const [selectedUnassignedUser, setSelectedUnassignedUser] = useState<number | null>(null);
     const [addMemberForm] = Form.useForm();
-
-    const handleSearch = (selectedKeys: string[], confirm: () => void, dataIndex: string) => {
-        confirm();
-        setSearchText(selectedKeys[0]);
-        setSearchedColumn(dataIndex);
-    };
-
-    const handleReset = (clearFilters: () => void, confirm: () => void) => {
-        clearFilters();
-        setSearchText('');
-        setSearchedColumn('');
-        confirm();
-    };
-
-    const handleMemberSearch = (selectedKeys: string[], confirm: () => void, dataIndex: string) => {
-        confirm();
-        setMemberSearchText(selectedKeys[0]);
-        setMemberSearchedColumn(dataIndex);
-    };
-
-    const handleMemberReset = (clearFilters: () => void, confirm: () => void) => {
-        clearFilters();
-        setMemberSearchText('');
-        setMemberSearchedColumn('');
-        confirm();
-    };
-
-    const handleUnassignedSearch = (selectedKeys: string[], confirm: () => void, dataIndex: string) => {
-        confirm();
-        setUnassignedSearchText(selectedKeys[0]);
-        setUnassignedSearchedColumn(dataIndex);
-    };
-
-    const handleUnassignedReset = (clearFilters: () => void, confirm: () => void) => {
-        clearFilters();
-        setUnassignedSearchText('');
-        setUnassignedSearchedColumn('');
-        confirm();
-    };
-
-    const getColumnSearchProps = (dataIndex: string) => ({
-        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
-            <div style={{ padding: 8 }}>
-                <Input
-                    placeholder={`Search ${dataIndex}`}
-                    value={selectedKeys[0]}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
-                    onPressEnter={() => handleSearch(selectedKeys as string[], confirm, dataIndex)}
-                    style={{ marginBottom: 8, display: 'block' }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Button
-                        type="primary"
-                        onClick={() => handleSearch(selectedKeys as string[], confirm, dataIndex)}
-                        size="small"
-                        style={{ width: 90 }}
-                    >
-                        Search
-                    </Button>
-                    <Button
-                        onClick={() => handleReset(clearFilters, confirm)}
-                        size="small"
-                        style={{ width: 90 }}
-                    >
-                        Reset
-                    </Button>
-                </div>
-            </div>
-        ),
-        filterIcon: (filtered: boolean) => (
-            <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
-        ),
-        onFilter: (value: string, record: any) => {
-            if (!value || value.trim() === '') {
-                return true;
-            }
-            
-            if (!record[dataIndex]) {
-                return false;
-            }
-
-            return record[dataIndex].toString().toLowerCase().includes(value.toLowerCase());
-        },
-        filteredValue: searchedColumn === dataIndex ? [searchText] : null,
-    });
-
-    const getMemberColumnSearchProps = (dataIndex: string) => ({
-        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
-            <div style={{ padding: 8 }}>
-                <Input
-                    placeholder={`Search ${dataIndex}`}
-                    value={selectedKeys[0]}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
-                    onPressEnter={() => handleMemberSearch(selectedKeys as string[], confirm, dataIndex)}
-                    style={{ marginBottom: 8, display: 'block' }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Button
-                        type="primary"
-                        onClick={() => handleMemberSearch(selectedKeys as string[], confirm, dataIndex)}
-                        size="small"
-                        style={{ width: 90 }}
-                    >
-                        Search
-                    </Button>
-                    <Button
-                        onClick={() => handleMemberReset(clearFilters, confirm)}
-                        size="small"
-                        style={{ width: 90 }}
-                    >
-                        Reset
-                    </Button>
-                </div>
-            </div>
-        ),
-        filterIcon: (filtered: boolean) => (
-            <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
-        ),
-        onFilter: (value: string, record: any) => {
-            if (!value || value.trim() === '') {
-                return true;
-            }
-            
-            if (!record[dataIndex]) {
-                return false;
-            }
-
-            return record[dataIndex].toString().toLowerCase().includes(value.toLowerCase());
-        },
-        filteredValue: memberSearchedColumn === dataIndex ? [memberSearchText] : null,
-    });
-
-    const getUnassignedColumnSearchProps = (dataIndex: string) => ({
-        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
-            <div style={{ padding: 8 }}>
-                <Input
-                    placeholder={`Search ${dataIndex}`}
-                    value={selectedKeys[0]}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
-                    onPressEnter={() => handleUnassignedSearch(selectedKeys as string[], confirm, dataIndex)}
-                    style={{ marginBottom: 8, display: 'block' }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Button
-                        type="primary"
-                        onClick={() => handleUnassignedSearch(selectedKeys as string[], confirm, dataIndex)}
-                        size="small"
-                        style={{ width: 90 }}
-                    >
-                        Search
-                    </Button>
-                    <Button
-                        onClick={() => handleUnassignedReset(clearFilters, confirm)}
-                        size="small"
-                        style={{ width: 90 }}
-                    >
-                        Reset
-                    </Button>
-                </div>
-            </div>
-        ),
-        filterIcon: (filtered: boolean) => (
-            <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
-        ),
-        onFilter: (value: string, record: any) => {
-            if (!value || value.trim() === '') {
-                return true;
-            }
-            
-            if (!record[dataIndex]) {
-                return false;
-            }
-
-            return record[dataIndex].toString().toLowerCase().includes(value.toLowerCase());
-        },
-        filteredValue: unassignedSearchedColumn === dataIndex ? [unassignedSearchText] : null,
-    });
 
     const fetchData = async () => {
         setTableLoading(true);
@@ -607,7 +428,6 @@ export default function DepartmentsPage() {
             title: 'Code',
             dataIndex: 'code',
             key: 'code',
-            ...getColumnSearchProps('code'),
             render: (text: string, record: any) => (
                 <a onClick={() => handleView(record)}>{text}</a>
             ),
@@ -616,14 +436,13 @@ export default function DepartmentsPage() {
             title: 'Name',
             dataIndex: 'name',
             key: 'name',
-            ...getColumnSearchProps('name'),
         },
         {
             title: '',
             key: 'action',
             render: (_: any, record: any) => (
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-                    <Button type="link" onClick={() => handleEdit(record)}>Edit</Button>
+                    <Button type="link" onClick={() => handleEdit(record)}><EditOutlined /></Button>
                     <Popconfirm
                         title="Delete department"
                         description={`Are you sure to delete ${record.name}?`}
@@ -633,7 +452,7 @@ export default function DepartmentsPage() {
                         placement="left"
                         icon={<QuestionCircleOutlined style={{ color: 'red' }} />}
                     >
-                        <Button type="link" danger>Delete</Button>
+                        <Button type="link" danger><DeleteOutlined /></Button>
                     </Popconfirm>
                 </div>
             )
@@ -645,13 +464,11 @@ export default function DepartmentsPage() {
             title: 'Email',
             dataIndex: 'email',
             key: 'email',
-            ...getMemberColumnSearchProps('email'),
         },
         {
             title: 'User Name',
             dataIndex: 'userName',
             key: 'userName',
-            ...getMemberColumnSearchProps('userName'),
         },
         {
             title: 'Role',
@@ -663,9 +480,7 @@ export default function DepartmentsPage() {
             key: 'actions',
             render: (_: any, record: DepartmentUserType) => (
                 <div style={{ display: 'flex', gap: 8 }}>
-                    <Button type="link" onClick={() => handleEditRole(record)}>
-                        Edit Role
-                    </Button>
+                    <Button type="link" onClick={() => handleEditRole(record)}><EditOutlined /></Button>
                     <Popconfirm
                         title="Remove member"
                         description={`Are you sure to remove ${record.userName} from this department?`}
@@ -675,7 +490,7 @@ export default function DepartmentsPage() {
                         placement="left"
                         icon={<QuestionCircleOutlined style={{ color: 'red' }} />}
                     >
-                        <Button type="link" danger>Remove</Button>
+                        <Button type="link" danger><UserDeleteOutlined /></Button>
                     </Popconfirm>
                 </div>
             )
@@ -686,13 +501,11 @@ export default function DepartmentsPage() {
             title: 'Email',
             dataIndex: 'email',
             key: 'email',
-            ...getUnassignedColumnSearchProps('email'),
         },
         {
             title: 'User Name',
             dataIndex: 'userName',
             key: 'userName',
-            ...getUnassignedColumnSearchProps('userName'),
         },
         {
             title: '',
@@ -776,14 +589,29 @@ export default function DepartmentsPage() {
                 label: 'Members',
                 children: (
                     <>
-                        <div style={{ marginBottom: 16 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
                             <Button type="primary" onClick={handleAddMember}>
                                 Add Member
                             </Button>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                <Search
+                                    placeholder="Search by email or name"
+                                    value={memberSearchText}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMemberSearchText(e.target.value)}
+                                    onSearch={(value: string) => setMemberSearchText(value)}
+                                    style={{ width: 250 }}
+                                    allowClear
+                                />
+                            </div>
                         </div>
                         <Table 
                             columns={memberColumns}
-                            dataSource={departmentMembers}
+                            dataSource={departmentMembers.filter(item => {
+                                if (!memberSearchText) return true;
+                                const searchLower = memberSearchText.toLowerCase();
+                                return (item.email?.toLowerCase().includes(searchLower) || false) || 
+                                       (item.userName?.toLowerCase().includes(searchLower) || false);
+                            })}
                             loading={membersLoading}
                             rowKey="userId"
                         />
@@ -796,10 +624,31 @@ export default function DepartmentsPage() {
     return (
         <DashboardLayout>
             <h1>Departments</h1>
-            <Button type="primary" onClick={() => setModalCreate(true)} style={{ marginBottom: 16 }}>
-                Create
-            </Button>
-            <Table columns={columns} dataSource={data} loading={tableLoading}  />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                <Button type="primary" onClick={() => setModalCreate(true)}>
+                    Create
+                </Button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                    <Search
+                        placeholder="Search by code or name"
+                        value={departmentSearchText}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDepartmentSearchText(e.target.value)}
+                        onSearch={(value: string) => setDepartmentSearchText(value)}
+                        style={{ width: 250 }}
+                        allowClear
+                    />
+                </div>
+            </div>
+            <Table 
+                columns={columns} 
+                dataSource={data.filter(item => {
+                    if (!departmentSearchText) return true;
+                    const searchLower = departmentSearchText.toLowerCase();
+                    return item.code.toLowerCase().includes(searchLower) || 
+                           item.name.toLowerCase().includes(searchLower);
+                })} 
+                loading={tableLoading} 
+            />
             <Modal
                 title="Create Department"
                 open={modalCreate}
@@ -874,22 +723,18 @@ export default function DepartmentsPage() {
                     setIsDetailModalOpen(false);
                     setSelectedDepartment(null);
                     setDepartmentMembers([]);
-                    // Clear search states when closing the modal
+                    // Clear new search states
                     setMemberSearchText('');
-                    setMemberSearchedColumn('');
                     setUnassignedSearchText('');
-                    setUnassignedSearchedColumn('');
                 }}
                 footer={[
                     <Button key="close" onClick={() => {
                         setIsDetailModalOpen(false);
                         setSelectedDepartment(null);
                         setDepartmentMembers([]);
-                        // Clear search states when closing the modal
+                        // Clear new search states
                         setMemberSearchText('');
-                        setMemberSearchedColumn('');
                         setUnassignedSearchText('');
-                        setUnassignedSearchedColumn('');
                     }}>
                         Close
                     </Button>
@@ -911,9 +756,8 @@ export default function DepartmentsPage() {
                     setEditRoleModalOpen(false);
                     setSelectedUser(null);
                     roleForm.resetFields();
-                    // Clear member search when closing the modal
+                    // Clear new search state
                     setMemberSearchText('');
-                    setMemberSearchedColumn('');
                 }}
                 onOk={updateUserRole}
                 confirmLoading={loading}
@@ -941,9 +785,8 @@ export default function DepartmentsPage() {
                 onCancel={() => {
                     setAddMemberModalOpen(false);
                     setSelectedUnassignedUser(null);
-                    // Clear unassigned users search when closing the modal
+                    // Clear new search state
                     setUnassignedSearchText('');
-                    setUnassignedSearchedColumn('');
                 }}
                 onOk={submitAddMember}
                 confirmLoading={loading}
@@ -951,9 +794,24 @@ export default function DepartmentsPage() {
             >
                 <div style={{ marginBottom: 16 }}>
                     <h3>Select a User</h3>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                        <Search
+                            placeholder="Search by email or name"
+                            value={unassignedSearchText}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUnassignedSearchText(e.target.value)}
+                            onSearch={(value: string) => setUnassignedSearchText(value)}
+                            style={{ width: 250 }}
+                            allowClear
+                        />
+                    </div>
                     <Table
                         columns={unassignedUserColumns}
-                        dataSource={unassignedUsers}
+                        dataSource={unassignedUsers.filter(item => {
+                            if (!unassignedSearchText) return true;
+                            const searchLower = unassignedSearchText.toLowerCase();
+                            return (item.email?.toLowerCase().includes(searchLower) || false) || 
+                                   (item.userName?.toLowerCase().includes(searchLower) || false);
+                        })}
                         loading={unassignedUsersLoading}
                         rowKey="userId"
                         pagination={{ pageSize: 5 }}

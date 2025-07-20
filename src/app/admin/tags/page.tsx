@@ -7,10 +7,11 @@ import { useAuth } from "@/features/auth/model/useAuth";
 import axios from "axios";
 import Loading from "@/shared/ui/Loading";
 import { useSession } from "next-auth/react";
-import { SearchOutlined } from "@ant-design/icons";
+import { SearchOutlined, EditOutlined, DeleteOutlined, TagOutlined } from "@ant-design/icons";
 import { useAntdMessage } from "@/shared/lib/hooks/useAntdMessage";
 import { Popconfirm } from "antd";
 import { QuestionCircleOutlined } from "@ant-design/icons";
+const { Search } = Input;
 
 interface TagType {
     id: number;
@@ -32,88 +33,25 @@ export default function TagsPage() {
     const [editForm] = Form.useForm();
     const [editingTag, setEditingTag] = useState<TagType | null>(null);
     const [searchText, setSearchText] = useState('');
-    const [searchedColumn, setSearchedColumn] = useState('');
-    const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
     const { showSuccess, showError } = useAntdMessage();
-
-    const handleSearch = (selectedKeys: string[], confirm: () => void, dataIndex: keyof TagType) => {
-        confirm();
-        setSearchText(selectedKeys[0]);
-        setSearchedColumn(dataIndex);
-    };
-
-    const handleReset = (clearFilters: () => void, confirm: () => void) => {
-        clearFilters();
-        setSearchText('');
-        setSearchedColumn('');
-        confirm();
-    };
-
-    const getColumnSearchProps = (dataIndex: keyof TagType) => ({
-        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
-            <div style={{ padding: 8 }}>
-                <Input
-                    placeholder={`Search ${dataIndex}`}
-                    value={selectedKeys[0]}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
-                    onPressEnter={() => handleSearch(selectedKeys as string[], confirm, dataIndex)}
-                    style={{ marginBottom: 8, display: 'block' }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Button
-                        type="primary"
-                        onClick={() => handleSearch(selectedKeys as string[], confirm, dataIndex)}
-                        size="small"
-                        style={{ width: 90 }}
-                    >
-                        Search
-                    </Button>
-                    <Button
-                        onClick={() => handleReset(clearFilters, confirm)}
-                        size="small"
-                        style={{ width: 90 }}
-                    >
-                        Reset
-                    </Button>
-                </div>
-            </div>
-        ),
-        filterIcon: (filtered: boolean) => (
-            <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
-        ),
-        onFilter: (value: string, record: TagType) => {
-            if (!value || value.trim() === '') {
-                return true;
-            }
-            
-            if (!record[dataIndex]) {
-                return false;
-            }
-
-            return record[dataIndex].toString().toLowerCase().includes(value.toLowerCase());
-        },
-        filteredValue: searchedColumn === dataIndex ? [searchText] : null,
-    });
 
     const columns = [
         {
             title: 'Name',
             dataIndex: 'name',
             key: 'name',
-            ...getColumnSearchProps('name'),
         },
         {
             title: 'Description',
             dataIndex: 'description',
             key: 'description',
-            ...getColumnSearchProps('description'),
         },
         {
             title: '',
             key: 'action',
             render: (_: any, record: TagType) => (
                 <div>
-                    <Button type="link" onClick={() => handleEdit(record)}>Edit</Button>
+                    <Button type="link" onClick={() => handleEdit(record)}><EditOutlined /></Button>
                     <Popconfirm
                         title="Delete tag"
                         description={`Are you sure to delete ${record.name}?`}
@@ -123,7 +61,7 @@ export default function TagsPage() {
                         placement="left"
                         icon={<QuestionCircleOutlined style={{ color: 'red' }} />}
                     >
-                        <Button type="link" danger>Delete</Button>
+                        <Button type="link" danger><DeleteOutlined /></Button>
                     </Popconfirm>
                 </div>
             )
@@ -221,13 +159,32 @@ export default function TagsPage() {
         return <Loading />;
     }
 
+    // Filter data based on search text
+    const filteredData = data.filter(item => {
+        if (!searchText) return true;
+        const searchLower = searchText.toLowerCase();
+        return item.name.toLowerCase().includes(searchLower);
+    });
+
     return (
         <DashboardLayout>
             <h1>Tags</h1>
-            <Button type="primary" onClick={() => setModalCreate(true)} style={{ marginBottom: 16 }}>
-                Create
-            </Button>
-            <Table columns={columns} dataSource={data} loading={tableLoading} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                <Button type="primary" onClick={() => setModalCreate(true)}>
+                    Create
+                </Button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                    <Search
+                        placeholder="Search by tag name"
+                        value={searchText}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchText(e.target.value)}
+                        onSearch={(value: string) => setSearchText(value)}
+                        style={{ width: 250 }}
+                        allowClear
+                    />
+                </div>
+            </div>
+            <Table columns={columns} dataSource={filteredData} loading={tableLoading} />
             
             {/* Create Modal */}
             <Modal
