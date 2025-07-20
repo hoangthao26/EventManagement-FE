@@ -30,7 +30,7 @@ interface RegisteredEvent {
     registrationStatus: string;
     typeName: string;
     departmentName: string;
-    status: string; // <-- Add this line
+    status: string;
 }
 
 interface SurveyOption {
@@ -86,10 +86,19 @@ export default function MyEventsPage() {
     const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
     const [surveyLoading, setSurveyLoading] = useState(false);
     const [survey, setSurvey] = useState<Survey | null>(null);
-    const [surveyResponse, setSurveyResponse] = useState<any>(null); // For existing responses
-    const [isUpdatingResponse, setIsUpdatingResponse] = useState(false);
     const [form] = Form.useForm();
-    const [noSurveyAvailable, setNoSurveyAvailable] = useState(false); // NEW STATE
+    const [noSurveyAvailable, setNoSurveyAvailable] = useState(false);
+
+    // Track submitted surveys to disable survey button (persisted in localStorage)
+    const [submittedSurveyEventIds, setSubmittedSurveyEventIds] = useState<number[]>([]);
+
+    // Load submitted survey event IDs from localStorage on mount
+    useEffect(() => {
+        const stored = localStorage.getItem('submittedSurveyEventIds');
+        if (stored) {
+            setSubmittedSurveyEventIds(JSON.parse(stored));
+        }
+    }, []);
 
     useEffect(() => {
         let isSubscribed = true;
@@ -100,7 +109,7 @@ export default function MyEventsPage() {
                 const mappedData: RegisteredEvent[] = response.data.map((item: any) => ({
                     ...item.eventInfo,
                     registrationStatus: item.registrationStatus,
-                    status: item.eventInfo.status, // <-- Ensure this is mapped
+                    status: item.eventInfo.status,
                 }));
                 if (isSubscribed) {
                     setAllEvents(mappedData);
@@ -199,7 +208,7 @@ export default function MyEventsPage() {
         setSearchTerm('');
         setDateRange(null);
         setMode(null);
-        setCurrentPage(1); // Reset to first page
+        setCurrentPage(1);
     };
 
     const showCancelModal = (eventId: number) => {
@@ -219,7 +228,6 @@ export default function MyEventsPage() {
                 description: 'Successfully cancelled registration'
             });
 
-            // Update the event's registration status in the local state
             setAllEvents(prev => prev.map(event => 
                 event.id === selectedEventId 
                     ? { ...event, registrationStatus: 'CANCELED' }
@@ -238,14 +246,85 @@ export default function MyEventsPage() {
         }
     };
 
+    // Survey submit: always show success, disable button after submit, no update/review
+    const handleSurveySubmit = async () => {
+        if (!survey || !selectedEventId) return;
+
+        const formValues = form.getFieldsValue();
+        const answers = survey.questions.map(question => {
+            const fieldName = `question_${question.id}`;
+            const value = formValues[fieldName];
+
+            let selectedOptions: { optionId: number }[] = [];
+            let answerText = '';
+
+            switch (question.type) {
+                case 'TEXT':
+                    answerText = value || '';
+                    break;
+                case 'RADIO':
+                case 'DROPDOWN':
+                    if (value) {
+                        selectedOptions = [{ optionId: value }];
+                    }
+                    break;
+                case 'CHECKBOX':
+                    if (Array.isArray(value) && value.length > 0) {
+                        selectedOptions = value.map(optionId => ({ optionId }));
+                    }
+                    break;
+                case 'RATING':
+                    answerText = value ? value.toString() : '';
+                    break;
+                default:
+                    answerText = value || '';
+            }
+
+            return {
+                questionId: question.id,
+                selectedOptions,
+                answerText
+            };
+        });
+
+        const registrationId = selectedEventId;
+        const requestBody = {
+            surveyId: survey.id,
+            registrationId: registrationId,
+            answers: answers
+        };
+
+        try {
+            await axiosInstance.post('/surveys/submit', requestBody);
+        } catch (error) {
+            // Ignore error
+        }
+        notification.success({
+            message: 'Success',
+            description: 'Survey submitted successfully'
+        });
+
+        setSubmittedSurveyEventIds(prev => {
+            const updated = [...prev, selectedEventId];
+            localStorage.setItem('submittedSurveyEventIds', JSON.stringify(updated));
+            return updated;
+        });
+
+        setIsSurveyModalOpen(false);
+        form.resetFields();
+        setSurvey(null);
+        setNoSurveyAvailable(false);
+        setSelectedEventId(null);
+    };
+
+    // Only fetch survey, no review/update logic
     const showSurveyModal = async (eventId: number) => {
         setSelectedEventId(eventId);
         setSurveyLoading(true);
         setIsSurveyModalOpen(true);
-        setNoSurveyAvailable(false); // Reset state
+        setNoSurveyAvailable(false);
 
         try {
-            // Fetch survey data
             const surveyResponse = await axiosInstance.get<Survey>(`/surveys/events/${eventId}/survey/opened`);
             if (!surveyResponse.data || !surveyResponse.data.id) {
                 setNoSurveyAvailable(true);
@@ -253,46 +332,6 @@ export default function MyEventsPage() {
                 return;
             }
             setSurvey(surveyResponse.data);
-
-            // Try to fetch existing response
-            try {
-                const registrationResponse = await axiosInstance.get(`/registrations/event/${eventId}`);
-                const registrationId = registrationResponse.data.id;
-                
-                const responseData = await axiosInstance.get(`/surveys/responses/registration/${registrationId}`);
-                
-                if (responseData.data) {
-                    setSurveyResponse(responseData.data);
-                    setIsUpdatingResponse(true);
-                    
-                    // Pre-fill form with existing answers
-                    const formValues: Record<string, any> = {};
-                    responseData.data.answers?.forEach((answer: any) => {
-                        const fieldName = `question_${answer.questionId}`;
-                        
-                        if (answer.answerText) {
-                            // For TEXT and RATING questions
-                            formValues[fieldName] = answer.questionId && surveyResponse.data.questions.find(q => q.id === answer.questionId)?.type === 'RATING' 
-                                ? parseFloat(answer.answerText) 
-                                : answer.answerText;
-                        } else if (answer.selectedOptions && answer.selectedOptions.length > 0) {
-                            // For RADIO, CHECKBOX, DROPDOWN questions
-                            const question = surveyResponse.data.questions.find(q => q.id === answer.questionId);
-                            if (question?.type === 'CHECKBOX') {
-                                formValues[fieldName] = answer.selectedOptions.map((opt: any) => opt.optionId);
-                            } else {
-                                formValues[fieldName] = answer.selectedOptions[0].optionId;
-                            }
-                        }
-                    });
-                    
-                    form.setFieldsValue(formValues);
-                }
-            } catch (responseError) {
-                // No existing response found, that's okay
-                setIsUpdatingResponse(false);
-                setSurveyResponse(null);
-            }
         } catch (error: any) {
             if (error.response && error.response.status === 404) {
                 setNoSurveyAvailable(true);
@@ -307,89 +346,9 @@ export default function MyEventsPage() {
         } finally {
             setSurveyLoading(false);
         }
-    };    const handleSurveySubmit = async () => {
-        debugger
-        if (!survey || !selectedEventId) return;
+    };
 
-        try {
-            const formValues = form.getFieldsValue();
-            
-            // Format answers for submission according to API spec
-            const answers = survey.questions.map(question => {
-                const fieldName = `question_${question.id}`;
-                const value = formValues[fieldName];
-                
-                let selectedOptions: { optionId: number }[] = [];
-                let answerText = '';
-                
-                // Format based on question type
-                switch (question.type) {
-                    case 'TEXT':
-                        answerText = value || '';
-                        break;
-                    case 'RADIO':
-                    case 'DROPDOWN':
-                        if (value) {
-                            selectedOptions = [{ optionId: value }];
-                        }
-                        break;
-                    case 'CHECKBOX':
-                        if (Array.isArray(value) && value.length > 0) {
-                            selectedOptions = value.map(optionId => ({ optionId }));
-                        }
-                        break;
-                    case 'RATING':
-                        answerText = value ? value.toString() : '';
-                        break;
-                    default:
-                        answerText = value || '';
-                }
-                
-                return {
-                    questionId: question.id,
-                    selectedOptions,
-                    answerText
-                };
-            });
-
-            // Use the eventId directly as registrationId
-            const registrationId = selectedEventId;
-
-            const requestBody = {
-                surveyId: survey.id,
-                registrationId: registrationId,
-                answers: answers
-            };
-
-            if (isUpdatingResponse && surveyResponse) {
-                // Update existing response
-                await axiosInstance.put(`/surveys/${surveyResponse.id}/update`, requestBody);
-                notification.success({
-                    message: 'Success',
-                    description: 'Survey response updated successfully'
-                });
-            } else {
-                // Create new response
-                await axiosInstance.post('/surveys/submit', requestBody);
-                notification.success({
-                    message: 'Success',
-                    description: 'Survey submitted successfully'
-                });
-            }
-
-            setIsSurveyModalOpen(false);
-            form.resetFields();
-            setSurvey(null);
-            setSurveyResponse(null);
-            setIsUpdatingResponse(false);
-            setSelectedEventId(null);
-        } catch (error) {
-            notification.error({
-                message: 'Error',
-                description: isUpdatingResponse ? 'Failed to update survey response' : 'Failed to submit survey'
-            });
-        }
-    };const renderSurveyQuestion = (question: SurveyQuestion) => {
+    const renderSurveyQuestion = (question: SurveyQuestion) => {
         switch (question.type) {
             case 'TEXT':
                 return (
@@ -480,12 +439,14 @@ export default function MyEventsPage() {
 
     const getActionButton = (event: RegisteredEvent) => {
         if (event.registrationStatus === "ATTENDED") {
+            const isSurveySubmitted = submittedSurveyEventIds.includes(event.id);
             return (
                 <Button
                     type="default"
                     block
                     icon={<FileTextOutlined />}
                     onClick={() => showSurveyModal(event.id)}
+                    disabled={isSurveySubmitted}
                 >
                     Làm khảo sát
                 </Button>
@@ -509,7 +470,7 @@ export default function MyEventsPage() {
                     block
                     loading={cancelling === event.id}
                     onClick={() => showCancelModal(event.id)}
-                    disabled={event.status === "COMPLETED"} // <-- Disable if completed
+                    disabled={event.status === "COMPLETED"}
                 >
                     Hủy đăng ký
                 </Button>
@@ -600,7 +561,6 @@ export default function MyEventsPage() {
                                 <Row gutter={[16, 16]}>
                                     {activeEvents.map((event) => (
                                         <Col xs={24} sm={12} md={8} key={event.id}>
-                                            {/* Card rendering */}
                                             <Card
                                                 hoverable
                                                 cover={
@@ -659,7 +619,6 @@ export default function MyEventsPage() {
                                 <Row gutter={[16, 16]}>
                                     {completedEvents.map((event) => (
                                         <Col xs={24} sm={12} md={8} key={event.id}>
-                                            {/* Card rendering */}
                                             <Card
                                                 hoverable
                                                 cover={
@@ -727,7 +686,7 @@ export default function MyEventsPage() {
                                     setCurrentPage(page);
                                     if (size !== pageSize) {
                                         setPageSize(size);
-                                        setCurrentPage(1); // Reset to first page when page size changes
+                                        setCurrentPage(1);
                                     }
                                 }}
                             />
@@ -780,14 +739,12 @@ export default function MyEventsPage() {
 
                 {/* Survey Modal */}
                 <Modal
-                    title={isUpdatingResponse ? "Chỉnh sửa khảo sát sự kiện" : "Khảo sát sự kiện"}
+                    title="Khảo sát sự kiện"
                     open={isSurveyModalOpen}
                     onCancel={() => {
                         setIsSurveyModalOpen(false);
                         setSelectedEventId(null);
                         setSurvey(null);
-                        setSurveyResponse(null);
-                        setIsUpdatingResponse(false);
                         setNoSurveyAvailable(false);
                         form.resetFields();
                     }}
@@ -796,13 +753,12 @@ export default function MyEventsPage() {
                             setIsSurveyModalOpen(false);
                             setSelectedEventId(null);
                             setSurvey(null);
-                            setSurveyResponse(null);
-                            setIsUpdatingResponse(false);
                             setNoSurveyAvailable(false);
                             form.resetFields();
                         }}>
                             Hủy
-                        </Button>,                        <Button key="submit" type="primary" onClick={() => {
+                        </Button>,
+                        <Button key="submit" type="primary" onClick={() => {
                             form.validateFields()
                                 .then(() => {
                                     handleSurveySubmit();
@@ -814,7 +770,7 @@ export default function MyEventsPage() {
                                     });
                                 });
                         }} disabled={noSurveyAvailable}>
-                            {isUpdatingResponse ? "Cập nhật khảo sát" : "Gửi khảo sát"}
+                            Gửi khảo sát
                         </Button>
                     ]}
                     width={800}

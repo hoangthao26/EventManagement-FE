@@ -101,7 +101,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
     const handleRegister = async () => {
         if (!eventId || !event || !session?.user) return;
-        debugger
+        
 
         setRegistering(true);
         try {
