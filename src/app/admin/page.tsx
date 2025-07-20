@@ -247,19 +247,10 @@ export default function AdminDashboardPage() {
                                     prefix={<PlayCircleOutlined />}
                                 />
                             </Card>
-
-                        </Col>
-                        {/* <Col xs={24} sm={12} md={8}>
-                            <Card>
-                                <Statistic
-                                    title="Upcoming Events"
-                                    value={stats.upcomingEvents}
-                                    prefix={<ScheduleOutlined />}
-                                />
-                            </Card>
-                        </Col> */}
+                        </Col>                      
                     </Row>
-                    <Row gutter={[16, 16]} className="mb-6" justify="center" style={{ marginTop: '10px' }}>
+                    
+                    <Row gutter={[16, 16]} style={{ marginTop: '10px' }}>
                         <Col xs={24} sm={12} md={8}>
                             <Card>
                                 <Statistic
