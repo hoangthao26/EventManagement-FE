@@ -154,7 +154,7 @@ export default function AdminDashboardPage() {
         labels: labels,
         datasets: [
             {
-                label: 'Event Registrations',
+                label: 'Events by Month',
                 data: labels.map((_, index) => {
                     const monthData = registrationData.find(item => item.month === index + 1);
                     return monthData ? monthData.count : 0;

@@ -382,7 +382,7 @@ export default function EventOverviewPage() {
                                     <Card 
                                         title={
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <span>Question {index + 1}</span>
+                                                <span>Question {index + 1}: {question.question}</span>
                                                 {/* <Button 
                                                     type="primary"
                                                     size="small"
