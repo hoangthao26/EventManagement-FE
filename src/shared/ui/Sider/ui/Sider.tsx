@@ -67,13 +67,7 @@ export const Sider: React.FC<SiderProps> = ({ collapsed }) => {
             );
         }
 
-        // Events menu cho tất cả roles
-        items.push({
-            key: '/events',
-            icon: <CalendarOutlined />,
-            label: 'Events',
-            onClick: () => router.push('/events'),
-        });
+       
 
         // Registered Events cho STUDENT và LECTURER
         if (hasRole('STUDENT') || hasRole('LECTURER')) {
@@ -82,6 +76,12 @@ export const Sider: React.FC<SiderProps> = ({ collapsed }) => {
                 icon: <CheckCircleOutlined />,
                 label: 'Registered Events',
                 onClick: () => router.push('/my-events'),
+            });
+            items.push({
+                key: '/events',
+                icon: <CalendarOutlined />,
+                label: 'Events',
+                onClick: () => router.push('/events'),
             });
         }
 

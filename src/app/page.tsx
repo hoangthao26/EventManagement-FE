@@ -15,7 +15,7 @@ const { Title, Paragraph } = Typography;
 
 export default function HomePage() {
   // DEVELOPMENT BYPASS - Remove auth checks
-  const { session, status } = useAuth();
+  const { session, status, redirectBasedOnRole } = useAuth();
   const router = useRouter();
 
   // Remove auth effect
@@ -23,7 +23,10 @@ export default function HomePage() {
     if (status === "unauthenticated") {
       window.location.href = "/login";
     }
-  }, [status]);
+    if (status === "authenticated" && session?.user?.roles) {
+      redirectBasedOnRole();
+    }
+  }, [status, session, redirectBasedOnRole, router]); 
 
   // Remove loading check
   if (status === "loading") {
